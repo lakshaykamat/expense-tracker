@@ -23,7 +23,7 @@ export class JwtService {
     signAccess(payload: JwtPayload) {
         try {
             return jwt.sign(payload, this.accessSecret, {
-                expiresIn: "15m"
+                expiresIn: "2h"  // 2 hours for better UX
             })
         } catch (error) {
             this.logger.error('Failed to sign access token', error);

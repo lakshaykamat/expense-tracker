@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Logger, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { LoginDto, RegisterDto } from './auth.types';
+import type { LoginDto, RegisterDto, RefreshTokenDto } from './auth.types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoggedInUser } from '../common/decorators/loggedin-user.decorator';
 import type { UserDocument } from './schemas/user.schema';
@@ -20,6 +20,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshToken(refreshTokenDto);
   }
 
   @Get('me')

@@ -2,7 +2,7 @@ import { Injectable, ConflictException, UnauthorizedException, Logger } from "@n
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { JwtService } from "./jwt.service";
-import type { LoginDto, RegisterDto, AuthResponse } from "./auth.types";
+import type { LoginDto, RegisterDto, AuthResponse, RefreshTokenDto } from "./auth.types";
 import { User, UserDocument } from "./schemas/user.schema";
 
 export interface UserMethods {
@@ -49,9 +49,11 @@ export class AuthService {
       this.logger.log(`User created successfully with ID: ${user._id}`);
 
       const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
+      const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
 
       const authResponse: AuthResponse = {
         access_token,
+        refresh_token,
         user: {
           id: user._id.toString(),
           email: user.email,
@@ -80,9 +82,11 @@ export class AuthService {
     await user.save();
 
     const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
+    const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
 
     const authResponse: AuthResponse = {
       access_token,
+      refresh_token,
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -100,6 +104,31 @@ export class AuthService {
       lastLoginAt: user.lastLoginAt,
     }
 
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
+    try {
+      const payload = this.jwt.verifyRefresh(refreshTokenDto.refresh_token);
+      const user = await this.validateUser(payload.sub);
+      
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
+      const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
+
+      return {
+        access_token,
+        refresh_token,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+        }
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 
   async validateUser(userId: string): Promise<UserDocument | null> {

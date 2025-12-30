@@ -23,8 +23,14 @@ export class RegisterDto {
   password: string;
 }
 
+export class RefreshTokenDto {
+  @IsString()
+  refresh_token: string;
+}
+
 export interface AuthResponse {
   access_token: string;
+  refresh_token?: string;
   user: {
     id: string;
     email: string;
