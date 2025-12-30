@@ -1,0 +1,9 @@
+## Server
+
+- [ ] Build Auth
+- [ ] Connect MongoDB
+- [ ] POST /api/expenses Store User expense
+- [ ] GET /api/expenses?from=2025-01-01&to=2025-01-31&category=food Retreive User expenses
+- [ ] DELETE /api/expenses/:expenseId Delete expense
+- [ ] PUT /api/expenses/:expenseId Update expense
+- [ ] GET /api/expenses/stats?from=2025-01-01&to=2025-01-31&groupBy=category
