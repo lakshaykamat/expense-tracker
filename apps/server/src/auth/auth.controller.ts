@@ -2,14 +2,14 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Logger, B
 import { AuthService } from './auth.service';
 import type { LoginDto, RegisterDto } from './auth.types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { LoggedInUser } from '../common/decorators/loggedin-user.decorator';
 import type { UserDocument } from './schemas/user.schema';
 
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
@@ -24,12 +24,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@CurrentUser() user: UserDocument) {
-    return {
-      id: user._id.toString(),
-      email: user.email,
-      createdAt: (user as any).createdAt,
-      lastLoginAt: user.lastLoginAt,
-    };
+  async getUser(@LoggedInUser() user: UserDocument) {
+    return this.authService.getLoggedInUser(user)
   }
 }

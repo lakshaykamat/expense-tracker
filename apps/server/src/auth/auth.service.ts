@@ -26,12 +26,12 @@ export class AuthService {
   constructor(
     private readonly jwt: JwtService,
     @InjectModel(User.name) private readonly userModel: UserModel
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     try {
       this.logger.log(`Registering user with email: ${registerDto.email}`);
-      
+
       const existingUser = await this.userModel.findOne({ email: registerDto.email });
       if (existingUser) {
         this.logger.warn(`Registration failed: Email ${registerDto.email} already exists`);
@@ -50,8 +50,8 @@ export class AuthService {
 
       const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
 
-      const authResponse: AuthResponse = { 
-        access_token, 
+      const authResponse: AuthResponse = {
+        access_token,
         user: {
           id: user._id.toString(),
           email: user.email,
@@ -81,8 +81,8 @@ export class AuthService {
 
     const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
 
-    const authResponse: AuthResponse = { 
-      access_token, 
+    const authResponse: AuthResponse = {
+      access_token,
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -90,6 +90,16 @@ export class AuthService {
     };
 
     return authResponse;
+  }
+
+  async getLoggedInUser(user: UserDocument) {
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      createdAt: (user as any).createdAt,
+      lastLoginAt: user.lastLoginAt,
+    }
+
   }
 
   async validateUser(userId: string): Promise<UserDocument | null> {
