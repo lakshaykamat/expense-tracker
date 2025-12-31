@@ -21,7 +21,12 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('User not found');
       }
 
-      request.user = user;
+      // Set user object with userId property
+      request.user = {
+        ...user.toObject(),
+        userId: user._id.toString()
+      };
+      
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');

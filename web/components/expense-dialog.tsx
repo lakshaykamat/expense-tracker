@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
@@ -14,12 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog'
-import { CreateExpenseData, ExpenseDialogProps } from '@/types'
+import { CreateExpenseData, Expense, ExpenseDialogProps } from '@/types'
 import { Plus } from 'lucide-react'
 import { CategoryInput } from './category-input'
 import { useCategories } from '@/hooks/useCategories'
 
-export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpenChange }: ExpenseDialogProps) {
+export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpenChange, editingExpense }: ExpenseDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onOpenChange || setInternalOpen
@@ -33,6 +33,29 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
     category: '',
     date: new Date().toISOString().split('T')[0]
   })
+
+  // Update form data when editingExpense changes
+  useEffect(() => {
+    if (editingExpense) {
+      setFormData({
+        title: editingExpense.title,
+        amount: editingExpense.amount,
+        description: editingExpense.description || '',
+        category: editingExpense.category || '',
+        date: new Date(editingExpense.date).toISOString().split('T')[0]
+      })
+      setShowAdvanced(!!editingExpense.description || !!editingExpense.category)
+    } else {
+      setFormData({
+        title: '',
+        amount: 0,
+        description: '',
+        category: '',
+        date: new Date().toISOString().split('T')[0]
+      })
+      setShowAdvanced(false)
+    }
+  }, [editingExpense])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,6 +82,15 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
     }))
   }
 
+  const handleTextareaChange = (field: keyof CreateExpenseData) => (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    setFormData((prev: CreateExpenseData) => ({
+      ...prev,
+      [field]: e.target.value
+    }))
+  }
+
   const handleCategoryChange = (value: string) => {
     setFormData(prev => ({ ...prev, category: value }))
   }
@@ -80,10 +112,10 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
       <DialogContent className="sm:max-w-[480px] p-0">
         <DialogHeader className="px-6 pt-6 border-b border-border/10">
           <DialogTitle className="text-xl font-semibold text-foreground">
-            Add Expense
+            {editingExpense ? 'Edit Expense' : 'Add Expense'}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Enter the details of your expense below
+            {editingExpense ? 'Update the details of your expense below' : 'Enter the details of your expense below'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -114,7 +146,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                   <Input
                     id="amount"
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
                     value={formData.amount}
                     onChange={handleChange('amount')}
@@ -173,7 +205,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                     <Textarea
                       id="description"
                       value={formData.description}
-                      onChange={handleChange('description')}
+                      onChange={handleTextareaChange('description')}
                       placeholder="Add any additional notes or details..."
                       className="min-h-[100px] resize-none text-base"
                     />
@@ -188,7 +220,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
               type="submit" 
               className="w-full h-11 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Add Expense
+              {editingExpense ? 'Update Expense' : 'Add Expense'}
             </Button>
           </DialogFooter>
         </form>

@@ -338,6 +338,230 @@ Authorization: Bearer <access_token>
 }
 ```
 
+#### Bulk Create Expenses
+```http
+POST /expenses/bulk
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "expenses": [
+    {
+      "title": "Coffee",
+      "amount": 5.50,
+      "description": "Morning coffee",
+      "category": "Food",
+      "date": "2025-12-30"
+    },
+    {
+      "title": "Lunch",
+      "amount": 12.00,
+      "description": "Office lunch",
+      "category": "Food",
+      "date": "2025-12-30"
+    },
+    {
+      "title": "Transport",
+      "amount": 3.00,
+      "category": "Transport",
+      "date": "2025-12-30"
+    }
+  ]
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "3 expenses created successfully",
+  "data": {
+    "message": "3 expenses created successfully",
+    "expenses": [
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+        "title": "Coffee",
+        "amount": 5.5,
+        "description": "Morning coffee",
+        "category": "Food",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:26:00.000Z"
+      },
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d80",
+        "title": "Lunch",
+        "amount": 12,
+        "description": "Office lunch",
+        "category": "Food",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:26:00.000Z"
+      },
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d81",
+        "title": "Transport",
+        "amount": 3,
+        "category": "Transport",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:26:00.000Z"
+      }
+    ]
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/expenses/bulk"
+}
+```
+
+#### Bulk Update Expenses
+```http
+PATCH /expenses/bulk
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "updates": [
+    {
+      "id": "639a7b8c9d1f2e3a4b5c6d7f",
+      "data": {
+        "amount": 6.00,
+        "category": "Beverages"
+      }
+    },
+    {
+      "id": "639a7b8c9d1f2e3a4b5c6d80",
+      "data": {
+        "title": "Updated Lunch",
+        "amount": 15.00
+      }
+    }
+  ]
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Updated 2 expenses successfully",
+  "data": {
+    "message": "Updated 2 expenses successfully",
+    "updated": [
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+        "title": "Coffee",
+        "amount": 6,
+        "description": "Morning coffee",
+        "category": "Beverages",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:30:00.000Z"
+      },
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d80",
+        "title": "Updated Lunch",
+        "amount": 15,
+        "description": "Office lunch",
+        "category": "Food",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:30:00.000Z"
+      }
+    ],
+    "errors": []
+  },
+  "timestamp": "2025-12-30T13:30:00.000Z",
+  "path": "/expenses/bulk"
+}
+```
+
+**Partial Failure Response:**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Updated 1 expenses successfully",
+  "data": {
+    "message": "Updated 1 expenses successfully",
+    "updated": [
+      {
+        "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+        "title": "Coffee",
+        "amount": 6,
+        "description": "Morning coffee",
+        "category": "Beverages",
+        "date": "2025-12-30T00:00:00.000Z",
+        "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+        "createdAt": "2025-12-30T13:26:00.000Z",
+        "updatedAt": "2025-12-30T13:30:00.000Z"
+      }
+    ],
+    "errors": [
+      {
+        "id": "invalid-id",
+        "error": "Expense not found"
+      }
+    ]
+  },
+  "timestamp": "2025-12-30T13:30:00.000Z",
+  "path": "/expenses/bulk"
+}
+```
+
+#### Bulk Delete Expenses
+```http
+DELETE /expenses/bulk
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "ids": [
+    "639a7b8c9d1f2e3a4b5c6d7f",
+    "639a7b8c9d1f2e3a4b5c6d80",
+    "639a7b8c9d1f2e3a4b5c6d81"
+  ]
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "3 expenses deleted successfully",
+  "data": {
+    "message": "3 expenses deleted successfully",
+    "deletedCount": 3
+  },
+  "timestamp": "2025-12-30T13:30:00.000Z",
+  "path": "/expenses/bulk"
+}
+```
+
+**No Expenses Found Response:**
+```json
+{
+  "statusCode": 404,
+  "timestamp": "2025-12-30T13:30:00.000Z",
+  "path": "/expenses/bulk",
+  "message": "No expenses found to delete"
+}
+```
+
 ---
 
 ## Error Responses
@@ -419,6 +643,183 @@ Authorization: Bearer <access_token>
 
 ---
 
+### 💳 Budgets
+
+All budget endpoints require authentication.
+
+#### Create Budget
+```http
+POST /budgets
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "Monthly Budget",
+  "amount": 2000,
+  "month": "2025-01",
+  "year": 2025,
+  "essentialItems": ["Rent", "Groceries", "Utilities"]
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "Resource created successfully",
+  "data": {
+    "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+    "name": "Monthly Budget",
+    "amount": 2000,
+    "month": "2025-01",
+    "year": 2025,
+    "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+    "essentialItems": ["Rent", "Groceries", "Utilities"],
+    "spentAmount": 0,
+    "isActive": true,
+    "createdAt": "2025-12-30T13:26:00.000Z",
+    "updatedAt": "2025-12-30T13:26:00.000Z",
+    "__v": 0
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets"
+}
+```
+
+#### Get All Budgets
+```http
+GET /budgets
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resources retrieved successfully",
+  "data": [
+    {
+      "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+      "name": "Monthly Budget",
+      "amount": 2000,
+      "month": "2025-01",
+      "year": 2025,
+      "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+      "essentialItems": ["Rent", "Groceries", "Utilities"],
+      "spentAmount": 150.50,
+      "isActive": true,
+      "createdAt": "2025-12-30T13:26:00.000Z",
+      "updatedAt": "2025-12-30T13:26:00.000Z"
+    }
+  ],
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets"
+}
+```
+
+#### Get Current Budget
+```http
+GET /budgets/current
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+    "name": "Monthly Budget",
+    "amount": 2000,
+    "month": "2025-01",
+    "year": 2025,
+    "userId": "639a7b8c9d1f2e3a4b5c6d7e",
+    "essentialItems": ["Rent", "Groceries", "Utilities"],
+    "spentAmount": 150.50,
+    "isActive": true,
+    "createdAt": "2025-12-30T13:26:00.000Z",
+    "updatedAt": "2025-12-30T13:26:00.000Z"
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/current"
+}
+```
+
+#### Get Budget by ID
+```http
+GET /budgets/:id
+Authorization: Bearer <access_token>
+```
+
+#### Update Budget
+```http
+PATCH /budgets/:id
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "amount": 2500,
+  "essentialItems": ["Rent", "Groceries", "Utilities", "Transport"]
+}
+```
+
+#### Delete Budget
+```http
+DELETE /budgets/:id
+Authorization: Bearer <access_token>
+```
+
+**Response (204):** No content
+
+#### Add Essential Item
+```http
+POST /budgets/:id/essential-items
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "item": "Transport"
+}
+```
+
+#### Remove Essential Item
+```http
+DELETE /budgets/:id/essential-items
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "item": "Transport"
+}
+```
+
+#### Update Spent Amount
+```http
+PATCH /budgets/:id/spent
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "amount": 25.50
+}
+```
+
+---
+
 ## Data Models
 
 ### User Model
@@ -441,6 +842,23 @@ interface Expense {
   category?: string;
   date: string;
   userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### Budget Model
+```typescript
+interface Budget {
+  _id: string;
+  name: string;
+  amount: number;
+  month: string; // Format: "YYYY-MM"
+  year: number;
+  userId: string;
+  essentialItems: string[];
+  spentAmount: number;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

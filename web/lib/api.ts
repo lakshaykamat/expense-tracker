@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { CookieUtils } from './cookie-utils'
 
 // API base configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 // Create axios instance with default configuration
 export const api: AxiosInstance = axios.create({
@@ -120,6 +120,7 @@ const onResponseError = async (error: any) => {
     return handleTokenRefresh(originalRequest)
   }
 
+  // Don't override the error - return it as-is to preserve server response
   return Promise.reject(error)
 }
 

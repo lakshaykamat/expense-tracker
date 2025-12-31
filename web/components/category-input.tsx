@@ -18,6 +18,7 @@ export function CategoryInput({ value, onChange, categories, onAddCategory }: Ca
   const [filteredCategories, setFilteredCategories] = useState<string[]>([])
   const [customValue, setCustomValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (value && !categories.includes(value)) {
@@ -85,7 +86,11 @@ export function CategoryInput({ value, onChange, categories, onAddCategory }: Ca
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      const isClickInsideInput = inputRef.current?.contains(target)
+      const isClickInsideDropdown = dropdownRef.current?.contains(target)
+      
+      if (!isClickInsideInput && !isClickInsideDropdown) {
         handleClickOutside()
       }
     }
@@ -96,7 +101,7 @@ export function CategoryInput({ value, onChange, categories, onAddCategory }: Ca
 
   return (
     <div className="space-y-1">
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <Input
           ref={inputRef}
           value={customValue}

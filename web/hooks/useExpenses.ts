@@ -50,12 +50,17 @@ export function useExpenses(): UseExpensesReturn {
   }
 
   const deleteExpense = async (id: string) => {
+    // Optimistically remove from UI immediately
+    const originalExpenses = expenses
+    setExpenses(prev => prev.filter(expense => expense._id !== id))
+    
     try {
       await expensesApi.delete(id)
-      setExpenses(prev => prev.filter(expense => expense._id !== id))
       return { success: true }
     } catch (error: any) {
       console.error('Failed to delete expense:', error)
+      // Restore original expenses if delete failed
+      setExpenses(originalExpenses)
       return { success: false, error: error.message }
     }
   }

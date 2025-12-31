@@ -6,6 +6,21 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LoggedInUser } from '../common/decorators/loggedin-user.decorator';
 import type { UserDocument } from '../auth/schemas/user.schema';
 
+export class BulkCreateExpenseDto {
+  expenses: CreateExpenseDto[];
+}
+
+export class BulkUpdateExpenseDto {
+  updates: Array<{
+    id: string;
+    data: UpdateExpenseDto;
+  }>;
+}
+
+export class BulkDeleteExpenseDto {
+  ids: string[];
+}
+
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
 export class ExpensesController {
@@ -14,6 +29,11 @@ export class ExpensesController {
   @Post()
   create(@Body() createExpenseDto: CreateExpenseDto, @LoggedInUser() user: UserDocument) {
     return this.expensesService.create(createExpenseDto, user._id.toString());
+  }
+
+  @Post('bulk')
+  bulkCreate(@Body() bulkCreateExpenseDto: BulkCreateExpenseDto, @LoggedInUser() user: UserDocument) {
+    return this.expensesService.bulkCreate(bulkCreateExpenseDto.expenses, user._id.toString());
   }
 
   @Get()
@@ -31,8 +51,18 @@ export class ExpensesController {
     return this.expensesService.update(id, updateExpenseDto, user._id.toString());
   }
 
+  @Patch('bulk')
+  bulkUpdate(@Body() bulkUpdateExpenseDto: BulkUpdateExpenseDto, @LoggedInUser() user: UserDocument) {
+    return this.expensesService.bulkUpdate(bulkUpdateExpenseDto.updates, user._id.toString());
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @LoggedInUser() user: UserDocument) {
     return this.expensesService.remove(id, user._id.toString());
+  }
+
+  @Delete('bulk')
+  bulkRemove(@Body() bulkDeleteExpenseDto: BulkDeleteExpenseDto, @LoggedInUser() user: UserDocument) {
+    return this.expensesService.bulkRemove(bulkDeleteExpenseDto.ids, user._id.toString());
   }
 }
