@@ -68,8 +68,8 @@ export default function AnalysisPage() {
   const availableMonths = budgets.map(b => b.month).sort((a, b) => b.localeCompare(a))
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-red-500'
-    if (percentage >= 80) return 'bg-yellow-500'
+    if (percentage >= 90) return 'bg-red-500'
+    if (percentage >= 70) return 'bg-yellow-500'
     return 'bg-green-500'
   }
 
@@ -86,113 +86,51 @@ export default function AnalysisPage() {
 
         {selectedBudget ? (
           <div className="space-y-6">
-            {/* Main Budget Progress Card */}
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Budget Progress</span>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {formatMonth(selectedBudget.month)}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Budget Used</span>
-                    <span className="font-medium">{budgetUsedPercentage.toFixed(1)}%</span>
+            {/* Minimal Budget Progress Card */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <span className="text-lg font-bold text-gray-900">{budgetUsedPercentage.toFixed(1)}%</span>
                   </div>
                   <div className="relative">
                     <Progress 
                       value={Math.min(budgetUsedPercentage, 100)} 
-                      className="h-3"
+                      className="h-2 [&>div]:bg-transparent"
                     />
                     <div 
                       className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${getProgressColor(budgetUsedPercentage)}`}
                       style={{ width: `${Math.min(budgetUsedPercentage, 100)}%` }}
                     />
                   </div>
-                </div>
-
-                {/* Budget Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-900">
-                      {formatCurrency(totalBudget)}
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <div className="text-lg font-semibold text-blue-900">
+                        {formatCurrency(totalBudget)}
+                      </div>
+                      <div className="text-xs text-blue-600">Budget</div>
                     </div>
-                    <div className="text-sm text-blue-600">Total Budget</div>
-                  </div>
-                  
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-900">
-                      {formatCurrency(totalExpenses)}
+                    <div className="bg-orange-50 rounded-lg p-3">
+                      <div className="text-lg font-semibold text-orange-900">
+                        {formatCurrency(totalExpenses)}
+                      </div>
+                      <div className="text-xs text-orange-600">Spent</div>
                     </div>
-                    <div className="text-sm text-orange-600">Spent</div>
-                  </div>
-                  
-                  <div className={`text-center p-4 rounded-lg ${
-                    remainingBudget >= 0 ? 'bg-green-50' : 'bg-red-50'
-                  }`}>
-                    <div className={`text-2xl font-bold ${
-                      remainingBudget >= 0 ? 'text-green-900' : 'text-red-900'
+                    <div className={`rounded-lg p-3 ${
+                      remainingBudget >= 0 ? 'bg-green-50' : 'bg-red-50'
                     }`}>
-                      {formatCurrency(Math.abs(remainingBudget))}
-                    </div>
-                    <div className={`text-sm ${
-                      remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}
+                      <div className={`text-lg font-semibold ${
+                        remainingBudget >= 0 ? 'text-green-900' : 'text-red-900'
+                      }`}>
+                        {formatCurrency(Math.abs(remainingBudget))}
+                      </div>
+                      <div className={`text-xs ${
+                        remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {remainingBudget >= 0 ? 'Left' : 'Over'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Budget Items Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Budget Items Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {selectedBudget.essentialItems
-                    .slice()
-                    .sort((a, b) => (b.amount || 0) - (a.amount || 0))
-                    .map((item, index) => {
-                      const itemExpenses = monthExpenses.filter(expense => 
-                        expense.category === item.name || expense.title.toLowerCase().includes(item.name.toLowerCase())
-                      )
-                      const itemSpent = itemExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-                      const itemBudget = item.amount || 0
-                      const itemUsedPercentage = itemBudget > 0 ? (itemSpent / itemBudget) * 100 : 0
-
-                      return (
-                        <div key={index} className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{item.name}</span>
-                            <div className="text-right">
-                              <div className="text-sm font-medium">
-                                {formatCurrency(itemSpent)} / {formatCurrency(itemBudget)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {itemUsedPercentage.toFixed(1)}% used
-                              </div>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <Progress 
-                              value={Math.min(itemUsedPercentage, 100)} 
-                              className="h-2"
-                            />
-                            <div 
-                              className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${getProgressColor(itemUsedPercentage)}`}
-                              style={{ width: `${Math.min(itemUsedPercentage, 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
                 </div>
               </CardContent>
             </Card>

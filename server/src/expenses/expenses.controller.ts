@@ -11,9 +11,12 @@ export class BulkCreateExpenseDto {
 }
 
 export class BulkUpdateExpenseDto {
-  updates: Array<{
-    id: string;
-    data: UpdateExpenseDto;
+  expenses: Array<{
+    title: string;
+    amount: number;
+    description?: string;
+    category?: string;
+    date: string;
   }>;
 }
 
@@ -46,23 +49,23 @@ export class ExpensesController {
     return this.expensesService.findOne(id, user._id.toString());
   }
 
+  @Patch('bulk')
+  bulkUpdate(@Body() bulkUpdateExpenseDto: BulkUpdateExpenseDto, @LoggedInUser() user: UserDocument) {
+    return this.expensesService.bulkUpdate(bulkUpdateExpenseDto.expenses, user._id.toString());
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto, @LoggedInUser() user: UserDocument) {
     return this.expensesService.update(id, updateExpenseDto, user._id.toString());
   }
 
-  @Patch('bulk')
-  bulkUpdate(@Body() bulkUpdateExpenseDto: BulkUpdateExpenseDto, @LoggedInUser() user: UserDocument) {
-    return this.expensesService.bulkUpdate(bulkUpdateExpenseDto.updates, user._id.toString());
+  @Delete('bulk')
+  bulkRemove(@Body() bulkDeleteExpenseDto: BulkDeleteExpenseDto, @LoggedInUser() user: UserDocument) {
+    return this.expensesService.bulkRemove(bulkDeleteExpenseDto.ids, user._id.toString());
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @LoggedInUser() user: UserDocument) {
     return this.expensesService.remove(id, user._id.toString());
-  }
-
-  @Delete('bulk')
-  bulkRemove(@Body() bulkDeleteExpenseDto: BulkDeleteExpenseDto, @LoggedInUser() user: UserDocument) {
-    return this.expensesService.bulkRemove(bulkDeleteExpenseDto.ids, user._id.toString());
   }
 }

@@ -62,26 +62,54 @@ export class ExpensesService {
     return expense;
   }
 
-  async bulkUpdate(updates: Array<{ id: string; data: UpdateExpenseDto }>, userId: string) {
+  async bulkUpdate(expenses: Array<{
+    title: string;
+    amount: number;
+    description?: string;
+    category?: string;
+    date: string;
+  }>, userId: string) {
+    // Get unique months from the expenses
+    const uniqueMonths = [...new Set(expenses.map(expense => 
+      expense.date.substring(0, 7) // Extract YYYY-MM
+    ))];
+
     const results: any[] = [];
-    const errors: Array<{ id: string; error: string }> = [];
 
-    for (const update of updates) {
-      try {
-        const expense = await this.update(update.id, update.data, userId);
-        results.push(expense);
-      } catch (error: any) {
-        errors.push({
-          id: update.id,
-          error: error.message
-        });
-      }
+    // For each month, delete existing expenses and create new ones
+    for (const month of uniqueMonths) {
+      const startDate = new Date(`${month}-01`);
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+      
+      // Delete existing expenses for this month and user
+      await this.expenseModel.deleteMany({
+        userId,
+        date: {
+          $gte: startDate,
+          $lt: endDate
+        }
+      });
+
+      // Filter expenses for this month
+      const monthExpenses = expenses.filter(expense => 
+        expense.date.substring(0, 7) === month
+      );
+
+      // Create new expenses for this month
+      const newExpenses = monthExpenses.map(expense => ({
+        ...expense,
+        userId,
+        date: new Date(expense.date)
+      }));
+
+      const result = await this.expenseModel.insertMany(newExpenses);
+      results.push(...result);
     }
-
+    
     return {
-      message: `Updated ${results.length} expenses successfully`,
-      updated: results,
-      errors: errors
+      message: `Replaced expenses for ${uniqueMonths.length} month(s) with ${results.length} new expenses`,
+      expenses: results
     };
   }
 
