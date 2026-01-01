@@ -49,3 +49,4 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icon-.*\\.png|.*\\.svg).*)',
   ],
 }
+

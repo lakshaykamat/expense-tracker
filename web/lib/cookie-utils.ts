@@ -9,7 +9,11 @@ export const CookieUtils = {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000))
     const expires = `expires=${date.toUTCString()}`
     
-    document.cookie = `${name}=${value}; ${expires}; path=/; SameSite=Lax`
+    // Add Secure flag when served over HTTPS (production/Vercel)
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+    const secureFlag = isSecure ? '; Secure' : ''
+    
+    document.cookie = `${name}=${value}; ${expires}; path=/; SameSite=Lax${secureFlag}`
   },
 
   // Get cookie value
