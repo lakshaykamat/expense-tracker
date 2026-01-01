@@ -53,7 +53,7 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />
       </div>
     )
@@ -61,7 +61,7 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-3">
             <span className="text-red-600 text-lg">!</span>

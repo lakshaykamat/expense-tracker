@@ -46,7 +46,7 @@ export default function HomePage() {
   if (!initialized || (loading && expenses.length === 0)) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
           <Spinner size="lg" />
         </div>
       </PageLayout>

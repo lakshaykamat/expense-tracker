@@ -32,7 +32,10 @@ export default function LoginPage() {
       setIsLoading(true)
       setError("")
       
-      const response = await AuthService.login({ email, password })
+      // Normalize email to lowercase
+      const normalizedEmail = email.toLowerCase().trim()
+      
+      const response = await AuthService.login({ email: normalizedEmail, password })
       
       if (response.success) {
         AuthService.setTokens(response.data.access_token, response.data.refresh_token)

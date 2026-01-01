@@ -12,7 +12,7 @@ interface SimpleBudgetListProps {
 export function SimpleBudgetList({ budgets, loading, error }: SimpleBudgetListProps) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />
       </div>
     )
