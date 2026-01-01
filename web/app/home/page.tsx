@@ -10,38 +10,36 @@ import { useExpenseDialog } from '@/hooks/useExpenseDialog'
 import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
 import { Spinner } from '@/components/ui/spinner'
 import { getCurrentMonth } from '@/utils/date.utils'
+import { isValidMonthFormat } from '@/utils/validation.utils'
 
 export default function HomePage() {
-  const currentMonth = getCurrentMonth()
-  const [selectedMonth, setSelectedMonth] = React.useState<string>(currentMonth)
-  const expensesHook = useExpenses(selectedMonth)
+  const [initialized, setInitialized] = React.useState(false)
+  const [selectedMonth, setSelectedMonth] = React.useState<string | null>(null)
+  const expensesHook = useExpenses(selectedMonth || undefined)
   const { expenses, loading, error, fetchExpenses, availableMonths: expenseMonths } = expensesHook
   
+  // Initialize with latest month on first load
   React.useEffect(() => {
-    if (expenseMonths.length > 0) {
-      if (!expenseMonths.includes(selectedMonth)) {
-        setSelectedMonth(expenseMonths[0])
-      }
-    } else if (selectedMonth !== currentMonth) {
-      setSelectedMonth(currentMonth)
+    if (!initialized && expenseMonths.length > 0) {
+      const latestMonth = expenseMonths[0]
+      setSelectedMonth(latestMonth)
+      setInitialized(true)
+    } else if (!initialized && expenseMonths.length === 0 && !loading) {
+      // No expenses exist, set to current month
+      setSelectedMonth(getCurrentMonth())
+      setInitialized(true)
     }
-  }, [expenseMonths, currentMonth])
-  
-  React.useEffect(() => {
-    if (selectedMonth) {
-      fetchExpenses(selectedMonth)
-    }
-  }, [selectedMonth])
+  }, [expenseMonths, initialized, loading])
   const dialogHook = useExpenseDialog()
   const { isDialogOpen, editingExpense, openAddDialog, openEditDialog, setIsDialogOpen } = dialogHook
   
   const { handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useExpenseHandlers({
     expenses: expensesHook,
     dialog: dialogHook,
-    selectedMonth
+    selectedMonth: selectedMonth || getCurrentMonth()
   })
 
-  if (loading && expenses.length === 0) {
+  if (!initialized || loading && expenses.length === 0) {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -60,8 +58,8 @@ export default function HomePage() {
         onAddExpense={openAddDialog}
         isLoading={loading}
         error={error || undefined}
-        onRetry={() => fetchExpenses(selectedMonth)}
-        selectedMonth={selectedMonth}
+        onRetry={() => selectedMonth && fetchExpenses(selectedMonth)}
+        selectedMonth={selectedMonth || getCurrentMonth()}
         onMonthChange={setSelectedMonth}
         availableMonths={expenseMonths}
       />

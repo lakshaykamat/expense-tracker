@@ -7,6 +7,7 @@ import { Budget, BudgetDocument, EssentialItem } from './schemas/budget.schema';
 import { ExpensesService } from '../expenses/expenses.service';
 import { getCurrentMonth } from '../common/utils/date.utils';
 import { isValidObjectId, isValidMonthFormat } from '../common/utils/validation.utils';
+import { buildUserIdQuery, toObjectId, buildIdAndUserIdQuery } from '../common/utils/query.utils';
 
 @Injectable()
 export class BudgetsService {
@@ -21,8 +22,9 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
     
+    const userIdQuery = buildUserIdQuery(userId);
     const existingBudget = await this.budgetModel.findOne({
-      userId,
+      ...userIdQuery,
       month: createBudgetDto.month,
     });
 
@@ -32,7 +34,7 @@ export class BudgetsService {
 
     const budget = new this.budgetModel({
       ...createBudgetDto,
-      userId,
+      userId: toObjectId(userId),
       essentialItems: createBudgetDto.essentialItems || [],
     });
 
@@ -40,8 +42,9 @@ export class BudgetsService {
   }
 
   async findAll(userId: string) {
+    const userIdQuery = buildUserIdQuery(userId);
     const budgets = await this.budgetModel
-      .find({ userId })
+      .find(userIdQuery)
       .sort({ month: -1 })
       .lean()
       .exec();
@@ -65,7 +68,8 @@ export class BudgetsService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const budgets = await this.budgetModel.find({ userId }).sort({ month: -1 }).lean();
+    const userIdQuery = buildUserIdQuery(userId);
+    const budgets = await this.budgetModel.find(userIdQuery).sort({ month: -1 }).lean();
     return budgets.map((budget: any) => ({
       _id: budget._id.toString(),
       month: budget.month,
@@ -83,7 +87,8 @@ export class BudgetsService {
       throw new BadRequestException('Invalid budget ID format');
     }
     
-    const budget = await this.budgetModel.findOne({ _id: id, userId }).lean();
+    const query = buildIdAndUserIdQuery(id, userId);
+    const budget = await this.budgetModel.findOne(query).lean();
     if (!budget) {
       throw new NotFoundException('Budget not found');
     }
@@ -100,8 +105,9 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
     
+    const query = buildIdAndUserIdQuery(id, userId);
     const budget = await this.budgetModel.findOneAndUpdate(
-      { _id: id, userId },
+      query,
       updateBudgetDto,
       { new: true, lean: true }
     );
@@ -118,7 +124,8 @@ export class BudgetsService {
       throw new BadRequestException('Invalid budget ID format');
     }
     
-    const result = await this.budgetModel.deleteOne({ _id: id, userId });
+    const query = buildIdAndUserIdQuery(id, userId);
+    const result = await this.budgetModel.deleteOne(query);
     if (result.deletedCount === 0) {
       throw new NotFoundException('Budget not found');
     }
@@ -129,7 +136,11 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
     
-    const budget = await this.budgetModel.findOne({ userId, month }).lean();
+    const userIdQuery = buildUserIdQuery(userId);
+    const query = { ...userIdQuery, month };
+    
+    const budget = await this.budgetModel.findOne(query).lean();
+    
     if (!budget) {
       return null;
     }
@@ -140,8 +151,9 @@ export class BudgetsService {
   async getCurrentBudget(userId: string) {
     const currentMonth = getCurrentMonth();
 
+    const userIdQuery = buildUserIdQuery(userId);
     let budget = await this.budgetModel.findOne({
-      userId,
+      ...userIdQuery,
       month: currentMonth,
     });
 
@@ -158,9 +170,10 @@ export class BudgetsService {
   }
 
   private async copyMostRecentBudget(userId: string, currentMonth: string) {
+    const userIdQuery = buildUserIdQuery(userId);
     const recentBudget = await this.budgetModel
       .findOne({
-        userId,
+        ...userIdQuery,
         month: { $lt: currentMonth },
       })
       .sort({ month: -1 })
@@ -171,7 +184,7 @@ export class BudgetsService {
     }
 
     const newBudget = new this.budgetModel({
-      userId,
+      userId: toObjectId(userId),
       month: currentMonth,
       essentialItems: recentBudget.essentialItems,
     });
@@ -209,7 +222,8 @@ export class BudgetsService {
       throw new BadRequestException('Item amount must be a valid positive number');
     }
     
-    const budget = await this.budgetModel.findOne({ _id: budgetId, userId });
+    const query = buildIdAndUserIdQuery(budgetId, userId);
+    const budget = await this.budgetModel.findOne(query);
     if (!budget) {
       throw new NotFoundException('Budget not found');
     }
@@ -236,7 +250,8 @@ export class BudgetsService {
       throw new BadRequestException('Item name is required');
     }
     
-    const budget = await this.budgetModel.findOne({ _id: budgetId, userId });
+    const query = buildIdAndUserIdQuery(budgetId, userId);
+    const budget = await this.budgetModel.findOne(query);
     if (!budget) {
       throw new NotFoundException('Budget not found');
     }
@@ -255,7 +270,8 @@ export class BudgetsService {
       throw new BadRequestException('Invalid budget ID format');
     }
     
-    const budget = await this.budgetModel.findOne({ _id: budgetId, userId });
+    const query = buildIdAndUserIdQuery(budgetId, userId);
+    const budget = await this.budgetModel.findOne(query);
     if (!budget) {
       throw new NotFoundException('Budget not found');
     }

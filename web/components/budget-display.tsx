@@ -27,26 +27,29 @@ interface BudgetDisplayProps {
 }
 
 export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBudget, onEditBudget, onDeleteBudget, onUpdateItem, onDeleteItem }: BudgetDisplayProps) {
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
-
-  // Auto-select latest budget when budgets change or on initial load
-  useEffect(() => {
-    if (budgets.length > 0 && !selectedMonth) {
-      // Get the latest budget (most recent month)
-      const latestBudget = budgets.reduce((latest, budget) => {
-        return budget.month > latest.month ? budget : latest
-      }, budgets[0])
-      
-      setSelectedMonth(latestBudget.month)
+  // Get available months from budgets (only months with budgets)
+  const availableMonths = budgets.map(b => b.month).filter(month => month).sort((a, b) => b.localeCompare(a))
+  
+  // Default to latest budget month
+  const getLatestMonth = () => {
+    if (availableMonths.length > 0) {
+      return availableMonths[0]
     }
-  }, [budgets, selectedMonth])
-
-  // Auto-select current month if no selection and current budget exists
-  useEffect(() => {
-    if (!selectedMonth && currentBudget && budgets.length === 0) {
-      setSelectedMonth(currentBudget.month)
+    if (currentBudget?.month) {
+      return currentBudget.month
     }
-  }, [currentBudget, selectedMonth, budgets])
+    return null
+  }
+  
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(getLatestMonth())
+
+  // Auto-select latest budget when budgets change
+  useEffect(() => {
+    const latestMonth = getLatestMonth()
+    if (latestMonth && latestMonth !== selectedMonth) {
+      setSelectedMonth(latestMonth)
+    }
+  }, [budgets, currentBudget])
 
   if (loading) {
     return (
@@ -69,7 +72,6 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
     )
   }
 
-  const availableMonths = budgets.map(b => b.month).sort((a, b) => b.localeCompare(a))
   const displayBudget = selectedMonth ? budgets.find(b => b.month === selectedMonth) : currentBudget
 
   const formatMonth = (monthString: string) => {

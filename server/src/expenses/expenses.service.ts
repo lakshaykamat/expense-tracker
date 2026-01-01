@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { Expense, ExpenseDocument } from './schemas/expense.schema';
 import { getMonthDateRange, normalizeDateToUTC } from '../common/utils/date.utils';
 import { isValidObjectId, isValidMonthFormat } from '../common/utils/validation.utils';
+import { buildUserIdQuery, toObjectId, toObjectIds, buildIdAndUserIdQuery } from '../common/utils/query.utils';
 
 @Injectable()
 export class ExpensesService {
@@ -26,7 +27,7 @@ export class ExpensesService {
     
     const expense = new this.expenseModel({
       ...createExpenseDto,
-      userId: new Types.ObjectId(userId),
+      userId: toObjectId(userId),
       date,
     });
     
@@ -46,7 +47,7 @@ export class ExpensesService {
       throw new BadRequestException('Cannot create more than 100 expenses at once');
     }
     
-    const userIdObj = new Types.ObjectId(userId);
+    const userIdObj = toObjectId(userId);
     const expenses = createExpenseDtos.map(dto => ({
       ...dto,
       userId: userIdObj,
@@ -65,7 +66,7 @@ export class ExpensesService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const query: any = { userId };
+    const query: any = buildUserIdQuery(userId);
     
     if (month) {
       if (!isValidMonthFormat(month)) {
@@ -90,7 +91,8 @@ export class ExpensesService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const expenses = await this.expenseModel.find({ userId }).sort({ date: -1 }).lean();
+    const query = buildUserIdQuery(userId);
+    const expenses = await this.expenseModel.find(query).sort({ date: -1 }).lean();
     return expenses.map((expense: any) => ({
       _id: expense._id.toString(),
       title: expense.title,
@@ -123,15 +125,12 @@ export class ExpensesService {
     }
 
     try {
-      const userIdObj = new Types.ObjectId(userId);
+      const userIdQuery = buildUserIdQuery(userId);
       
       const result = await this.expenseModel.aggregate([
         {
           $match: {
-            $or: [
-              { userId: userIdObj },
-              { userId: userId }
-            ],
+            ...userIdQuery,
             date: {
               $gte: startDate,
               $lt: endDate
@@ -186,7 +185,8 @@ export class ExpensesService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const expense = await this.expenseModel.findOne({ _id: id, userId });
+    const query = buildIdAndUserIdQuery(id, userId);
+    const expense = await this.expenseModel.findOne(query);
     if (!expense) {
       throw new NotFoundException('Expense not found');
     }
@@ -211,8 +211,9 @@ export class ExpensesService {
       updateData.date = date;
     }
     
+    const query = buildIdAndUserIdQuery(id, userId);
     const expense = await this.expenseModel.findOneAndUpdate(
-      { _id: id, userId },
+      query,
       updateData,
       { new: true }
     );
@@ -257,8 +258,9 @@ export class ExpensesService {
         throw new BadRequestException('Invalid user ID format');
       }
       
+      const userIdQuery = buildUserIdQuery(userId);
       await this.expenseModel.deleteMany({
-        userId,
+        ...userIdQuery,
         date: {
           $gte: startDate,
           $lt: endDate
@@ -269,7 +271,7 @@ export class ExpensesService {
         expense.date.substring(0, 7) === month
       );
 
-      const userIdObj = new Types.ObjectId(userId);
+      const userIdObj = toObjectId(userId);
       const newExpenses = monthExpenses.map(expense => ({
         ...expense,
         userId: userIdObj,
@@ -295,7 +297,8 @@ export class ExpensesService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const result = await this.expenseModel.deleteOne({ _id: id, userId });
+    const query = buildIdAndUserIdQuery(id, userId);
+    const result = await this.expenseModel.deleteOne(query);
     
     if (result.deletedCount === 0) {
       throw new NotFoundException('Expense not found');
@@ -322,7 +325,12 @@ export class ExpensesService {
       throw new BadRequestException('Invalid user ID format');
     }
     
-    const result = await this.expenseModel.deleteMany({ _id: { $in: validIds }, userId });
+    const userIdQuery = buildUserIdQuery(userId);
+    const query = {
+      _id: { $in: toObjectIds(validIds) },
+      ...userIdQuery
+    };
+    const result = await this.expenseModel.deleteMany(query);
     
     if (result.deletedCount === 0) {
       throw new NotFoundException('No expenses found to delete');

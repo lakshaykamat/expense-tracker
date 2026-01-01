@@ -64,14 +64,6 @@ export function useExpenses(month?: string): UseExpensesReturn {
       setLoading(false)
     }
   }, [month])
-  
-  // Fetch expenses on mount and when month changes
-  useEffect(() => {
-    const monthToFetch = month || getCurrentMonth()
-    if (monthToFetch && isValidMonthFormat(monthToFetch)) {
-      fetchExpenses(monthToFetch)
-    }
-  }, [month, fetchExpenses])
 
   const addExpense = useCallback(async (data: CreateExpenseData) => {
     try {
@@ -153,15 +145,15 @@ export function useExpenses(month?: string): UseExpensesReturn {
     }
   }, [expenses, fetchAvailableMonths])
 
+  // Fetch available months on mount
   useEffect(() => {
     fetchAvailableMonths()
   }, [fetchAvailableMonths])
 
   // Fetch expenses when month prop changes
   useEffect(() => {
-    const monthToFetch = month || getCurrentMonth()
-    if (monthToFetch && isValidMonthFormat(monthToFetch)) {
-      fetchExpenses(monthToFetch)
+    if (month && isValidMonthFormat(month)) {
+      fetchExpenses(month)
     }
   }, [month, fetchExpenses])
 
