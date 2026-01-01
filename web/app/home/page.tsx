@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { ExpenseList } from '@/components/expense-list'
 import { ExpenseDialog } from '@/components/expense-dialog'
 import { FabButton } from '@/components/fab-button'
@@ -7,18 +8,30 @@ import { PageLayout } from '@/components/page-layout'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useExpenseDialog } from '@/hooks/useExpenseDialog'
 import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
-import { useMonthSelection } from '@/hooks/useMonthSelection'
-import { useBudgets } from '@/hooks/useBudgets'
 import { Spinner } from '@/components/ui/spinner'
+import { getCurrentMonth } from '@/utils/date.utils'
 
 export default function HomePage() {
-  const { budgets, currentBudget } = useBudgets()
-  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection({
-    budgets,
-    currentBudget
-  })
+  const currentMonth = getCurrentMonth()
+  const [selectedMonth, setSelectedMonth] = React.useState<string>(currentMonth)
   const expensesHook = useExpenses(selectedMonth)
-  const { expenses, loading, error, fetchExpenses } = expensesHook
+  const { expenses, loading, error, fetchExpenses, availableMonths: expenseMonths } = expensesHook
+  
+  React.useEffect(() => {
+    if (expenseMonths.length > 0) {
+      if (!expenseMonths.includes(selectedMonth)) {
+        setSelectedMonth(expenseMonths[0])
+      }
+    } else if (selectedMonth !== currentMonth) {
+      setSelectedMonth(currentMonth)
+    }
+  }, [expenseMonths, currentMonth])
+  
+  React.useEffect(() => {
+    if (selectedMonth) {
+      fetchExpenses(selectedMonth)
+    }
+  }, [selectedMonth])
   const dialogHook = useExpenseDialog()
   const { isDialogOpen, editingExpense, openAddDialog, openEditDialog, setIsDialogOpen } = dialogHook
   
@@ -50,7 +63,7 @@ export default function HomePage() {
         onRetry={() => fetchExpenses(selectedMonth)}
         selectedMonth={selectedMonth}
         onMonthChange={setSelectedMonth}
-        availableMonths={availableMonths}
+        availableMonths={expenseMonths}
       />
 
       <FabButton onClick={openAddDialog} />

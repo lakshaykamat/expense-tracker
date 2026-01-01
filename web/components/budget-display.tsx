@@ -12,6 +12,7 @@ import {
 } from './ui/dropdown-menu'
 import { Plus, ChevronDown, Edit, Trash2 } from 'lucide-react'
 import { Spinner } from './ui/spinner'
+import { EmptyState } from './empty-state'
 
 interface BudgetDisplayProps {
   budgets: Budget[]
@@ -141,22 +142,18 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <EmptyState
+          title={selectedMonth ? `No budget for ${formatMonth(selectedMonth)}` : "No budget found"}
+          description={selectedMonth 
+            ? `Create a budget for ${formatMonth(selectedMonth)} to get started`
+            : 'Create your first budget to start tracking your expenses'
+          }
+          icon={
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.25 7.5l-.625 10.532a2.25 2.25 0 01-1.592.659l-5.433-5.433a2.25 2.25 0 00-3.184 0l-5.433 5.433a2.25 2.25 0 00-1.592.659L3.75 7.5m6 0l5.832-5.832m0 0a2.25 2.25 0 003.184 0l5.433 5.433a2.25 2.25 0 001.592-.659L20.25 7.5" />
             </svg>
-          </div>
-          <div className="text-center">
-            <h3 className="text-xl font-light text-gray-900 mb-2">No essential items</h3>
-            <p className="text-gray-500">
-              {selectedMonth 
-                ? `No items for ${formatMonth(selectedMonth)}`
-                : 'Add essential items to your budget'
-              }
-            </p>
-          </div>
-        </div>
+          }
+        />
       )}
     </div>
   )

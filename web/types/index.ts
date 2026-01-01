@@ -170,6 +170,7 @@ export interface UseExpensesReturn {
   expenses: Expense[]
   loading: boolean
   error: string | null
+  availableMonths: string[]
   fetchExpenses: (month?: string) => Promise<void>
   addExpense: (data: CreateExpenseData) => Promise<{ success: boolean; error?: string }>
   updateExpense: (id: string, data: CreateExpenseData) => Promise<{ success: boolean; error?: string }>
