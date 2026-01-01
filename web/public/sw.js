@@ -1,93 +1,81 @@
-const CACHE_NAME = 'expense-tracker-v1';
-const isDev = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const CACHE_NAME = 'expense-tracker-static-v1';
 
-// Install event - cache resources
+const STATIC_ASSETS = [
+  '/',
+  '/favicon.ico',
+];
+
+// Install — cache ONLY truly static assets
 self.addEventListener('install', (event) => {
-  if (isDev) {
-    // In dev mode, skip waiting immediately
-    self.skipWaiting();
-    return;
-  }
-
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        const urlsToCache = ['/', '/home', '/budgets', '/analysis', '/profile', '/login', '/signup'];
-        return cache.addAll(urlsToCache).catch((error) => {
-          console.warn('Cache install failed (non-critical):', error);
-        });
-      })
-      .catch((error) => {
-        console.error('Cache install failed:', error);
-      })
-  );
   self.skipWaiting();
-});
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
-  return self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Skip API requests - always use network
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('localhost:5001') ||
-      event.request.url.includes('onrender.com') ||
-      event.request.url.includes('_next/')) {
-    return;
-  }
-
-  // In dev mode, always use network first
-  if (isDev) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request)
-          .then((response) => {
-            // Don't cache if not a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // Return offline page if available
-            if (event.request.destination === 'document') {
-              return caches.match('/');
-            }
-          });
-      })
+// Activate — clean old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      )
+    )
   );
+
+  self.clients.claim();
 });
 
+// Fetch — cache ONLY static files, never pages
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+
+  // Only GET
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // ❌ NEVER intercept navigation (App Router needs network)
+  if (request.mode === 'navigate') {
+    return;
+  }
+
+  // ❌ Never touch Next.js internals or APIs
+  if (
+    url.pathname.startsWith('/_next') ||
+    url.pathname.startsWith('/api')
+  ) {
+    return;
+  }
+
+  // ✅ Cache static assets only
+  if (
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.woff2')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+
+        return fetch(request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+          });
+          return response;
+        });
+      })
+    );
+  }
+});
