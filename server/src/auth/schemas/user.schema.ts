@@ -23,6 +23,15 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+// Normalize email to lowercase before saving
+UserSchema.pre('save', function() {
+  const user = this as UserDocument;
+  if (user.email) {
+    user.email = user.email.toLowerCase().trim();
+  }
+});
+
+// Hash password before saving
 UserSchema.pre('save', async function() {
   const user = this as UserDocument;
   

@@ -30,20 +30,23 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     try {
-      this.logger.log(`Registering user with email: ${registerDto.email}`);
+      // Normalize email to lowercase
+      const normalizedEmail = registerDto.email.toLowerCase().trim();
+      
+      this.logger.log(`Registering user with email: ${normalizedEmail}`);
 
-      const existingUser = await this.userModel.findOne({ email: registerDto.email });
+      const existingUser = await this.userModel.findOne({ email: normalizedEmail });
       if (existingUser) {
-        this.logger.warn(`Registration failed: Email ${registerDto.email} already exists`);
+        this.logger.warn(`Registration failed: Email ${normalizedEmail} already exists`);
         throw new ConflictException('User with this email already exists');
       }
 
       const user = new this.userModel({
-        email: registerDto.email,
+        email: normalizedEmail,
         password: registerDto.password,
       });
 
-      this.logger.log(`Creating user with email: ${registerDto.email}`);
+      this.logger.log(`Creating user with email: ${normalizedEmail}`);
 
       await user.save();
       this.logger.log(`User created successfully with ID: ${user._id}`);
@@ -68,7 +71,10 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const user = await this.userModel.findOne({ email: loginDto.email });
+    // Normalize email to lowercase
+    const normalizedEmail = loginDto.email.toLowerCase().trim();
+    
+    const user = await this.userModel.findOne({ email: normalizedEmail });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
