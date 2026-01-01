@@ -50,6 +50,7 @@ export function proxy(request: NextRequest) {
  */
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icon-.*\\.png|.*\\.svg).*)',
+    // Exclude next-pwa generated files: sw.js, workbox-*.js, fallback-*.js
+    '/((?!api|_next/static|_next/image|favicon.ico|sw.js|workbox-.*\\.js|fallback-.*\\.js|manifest.json|icon-.*\\.png|.*\\.svg).*)',
   ],
 }

@@ -4,7 +4,6 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { MobileHeader } from "@/components/mobile-header";
-import { PWARegister } from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,7 +57,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PWARegister />
         <Navigation />
         <MobileHeader />
         <main className="min-h-screen bg-background md:pt-0 pb-16 md:pb-0">
