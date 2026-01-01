@@ -8,11 +8,15 @@ import { MobileHeader } from "@/components/mobile-header";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: 'swap', // Optimize font loading
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: 'swap', // Optimize font loading
+  preload: false, // Only preload primary font
 });
 
 export const metadata: Metadata = {

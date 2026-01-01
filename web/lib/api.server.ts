@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 // Server-safe axios instance (no interceptors, no cookies, no browser APIs)
 export const serverApi: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 5000, // 5 seconds - faster timeout
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,8 +1,7 @@
 'use client'
 
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { ExpenseList } from '@/components/expense-list'
-import { ExpenseDialog } from '@/components/expense-dialog'
 import { FabButton } from '@/components/fab-button'
 import { PageLayout } from '@/components/page-layout'
 import { useExpenses } from '@/hooks/useExpenses'
@@ -11,6 +10,9 @@ import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
 import { Spinner } from '@/components/ui/spinner'
 import { getCurrentMonth } from '@/utils/date.utils'
 import { isValidMonthFormat } from '@/utils/validation.utils'
+
+// Lazy load dialog component (only loads when needed)
+const ExpenseDialog = lazy(() => import('@/components/expense-dialog').then(module => ({ default: module.ExpenseDialog })))
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +48,7 @@ export default function HomePage() {
   if (!initialized || (loading && expenses.length === 0)) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
+        <div className="flex items-center justify-center w-full" style={{ minHeight: 'calc(100vh - 8rem)' }}>
           <Spinner size="lg" />
         </div>
       </PageLayout>
@@ -70,19 +72,23 @@ export default function HomePage() {
 
       <FabButton onClick={openAddDialog} />
 
-      <ExpenseDialog
-        onSubmit={handleAddExpense}
-        open={isDialogOpen && !editingExpense}
-        onOpenChange={setIsDialogOpen}
-      />
+      <Suspense fallback={null}>
+        <ExpenseDialog
+          onSubmit={handleAddExpense}
+          open={isDialogOpen && !editingExpense}
+          onOpenChange={setIsDialogOpen}
+        />
+      </Suspense>
 
       {editingExpense && (
-        <ExpenseDialog
-          onSubmit={handleUpdateExpense}
-          open={isDialogOpen && !!editingExpense}
-          onOpenChange={setIsDialogOpen}
-          editingExpense={editingExpense}
-        />
+        <Suspense fallback={null}>
+          <ExpenseDialog
+            onSubmit={handleUpdateExpense}
+            open={isDialogOpen && !!editingExpense}
+            onOpenChange={setIsDialogOpen}
+            editingExpense={editingExpense}
+          />
+        </Suspense>
       )}
     </PageLayout>
   )

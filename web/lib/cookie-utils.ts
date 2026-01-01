@@ -41,8 +41,10 @@ export const CookieUtils = {
 
   // Set auth tokens in cookies
   setAuthTokens(accessToken: string, refreshToken: string): void {
-    this.setCookie('access_token', accessToken, 2/24) // 2 hours in days
-    this.setCookie('refresh_token', refreshToken, 7) // 7 days
+    // Access token: 7 days
+    // Refresh token: 30 days
+    this.setCookie('access_token', accessToken, 7) // 7 days
+    this.setCookie('refresh_token', refreshToken, 30) // 30 days
   },
 
   // Get access token

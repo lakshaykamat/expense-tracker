@@ -14,7 +14,7 @@ if (!process.env.NEXT_PUBLIC_API_URL && typeof window !== 'undefined') {
 // Create axios instance with default configuration
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 5000, // 5 seconds - faster timeout for better UX
   headers: {
     'Content-Type': 'application/json',
   },
@@ -61,23 +61,43 @@ const refreshAccessToken = async () => {
     throw new Error('No refresh token available')
   }
 
-  const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-    refresh_token: refreshToken
-  })
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      refresh_token: refreshToken
+    })
 
-  const { access_token, refresh_token: newRefreshToken } = response.data.data
-  
-  // Update cookies
-  CookieUtils.setAuthTokens(access_token, newRefreshToken || refreshToken)
-  
-  return access_token
+    const { access_token, refresh_token: newRefreshToken } = response.data.data
+    
+    // Update cookies
+    CookieUtils.setAuthTokens(access_token, newRefreshToken || refreshToken)
+    
+    return access_token
+  } catch (error: any) {
+    // Check if it's an authentication error (401, 403) vs network error
+    const isAuthError = error.response?.status === 401 || error.response?.status === 403
+    if (isAuthError) {
+      // Refresh token is invalid/expired - user needs to login again
+      throw new Error('REFRESH_TOKEN_EXPIRED')
+    }
+    // Network error or other error - rethrow to let caller handle
+    throw error
+  }
 }
 
 // Handle failed refresh
 const handleRefreshFailure = (error: any) => {
   processQueue(error, null)
-  CookieUtils.clearAuthTokens()
-  window.location.href = '/login'
+  
+  // Only logout if refresh token is actually expired/invalid
+  // Don't logout on network errors - let user retry
+  if (error.message === 'REFRESH_TOKEN_EXPIRED' || error.response?.status === 401 || error.response?.status === 403) {
+    CookieUtils.clearAuthTokens()
+    // Use setTimeout to avoid navigation during render
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 0)
+  }
+  
   return Promise.reject(error)
 }
 
@@ -122,8 +142,12 @@ const onResponseSuccess = (response: AxiosResponse) => {
 const onResponseError = async (error: any) => {
   const originalRequest = error.config
 
-  // Handle 401 errors with token refresh
-  if (error.response?.status === 401 && !originalRequest._retry) {
+  // Handle 401 errors with token refresh (only for authenticated endpoints)
+  // Skip refresh for login/register endpoints to avoid loops
+  const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                         originalRequest.url?.includes('/auth/register')
+  
+  if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
     return handleTokenRefresh(originalRequest)
   }
 

@@ -27,7 +27,7 @@ export default function AnalysisPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
+        <div className="flex items-center justify-center w-full" style={{ minHeight: 'calc(100vh - 8rem)' }}>
           <Spinner size="lg" />
         </div>
       </PageLayout>

@@ -1,13 +1,16 @@
 "use client";
 
+import { lazy, Suspense } from "react";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useBudgetDialog } from "@/hooks/useBudgetDialog";
 import { useBudgetHandlers } from "@/hooks/useBudgetHandlers";
 import { BudgetDisplay } from '@/components/budget-display'
 import { PageLayout } from '@/components/page-layout'
-import { BudgetDialog } from '@/components/budget-dialog'
 import { BudgetFab } from '@/components/budget-fab'
 import { Plus } from "lucide-react";
+
+// Lazy load dialog component (only loads when needed)
+const BudgetDialog = lazy(() => import('@/components/budget-dialog').then(module => ({ default: module.BudgetDialog })))
 
 export const dynamic = "force-dynamic";
 
@@ -55,12 +58,14 @@ export default function BudgetsPage() {
       />
 
       {/* Budget Dialog */}
-      <BudgetDialog
-        open={isDialogOpen}
-        onOpenChange={closeDialog}
-        onSubmit={handleBudgetSubmit}
-        editingBudget={editingBudget || undefined}
-      />
+      <Suspense fallback={null}>
+        <BudgetDialog
+          open={isDialogOpen}
+          onOpenChange={closeDialog}
+          onSubmit={handleBudgetSubmit}
+          editingBudget={editingBudget || undefined}
+        />
+      </Suspense>
       
       {/* Floating Action Button - Mobile Only */}
       <BudgetFab onClick={() => openAddDialog()}>
