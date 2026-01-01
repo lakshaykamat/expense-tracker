@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react'
 
 export function FabButton({ onClick, children }: FabButtonProps) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 sm:hidden">
+    <div className="fixed bottom-20 right-6 z-[60] sm:hidden">
       <Button
         onClick={onClick}
         size="lg"

@@ -111,6 +111,8 @@ export interface ExpenseListProps {
   onRetry?: () => void
   isLoading?: boolean
   error?: string
+  selectedMonth: string
+  onMonthChange: (month: string) => void
 }
 
 export interface ExpenseStatsProps {
@@ -204,4 +206,13 @@ export interface UseBudgetDialogReturn {
   openEditDialog: (budget: Budget) => void
   closeDialog: () => void
   setIsDialogOpen: (open: boolean) => void
+}
+
+export interface AnalysisStats {
+  budget?: Budget
+  totalBudget: number
+  totalExpenses: number
+  remainingBudget: number
+  budgetUsedPercentage: number
+  budgetExists: boolean
 }

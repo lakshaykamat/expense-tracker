@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { ApiResponse, Budget, CreateBudgetData, UpdateBudgetData, EssentialItem } from '@/types'
+import type { ApiResponse, Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, AnalysisStats } from '@/types'
 
 export const budgetsApi = {
   // Get all budgets for the user
@@ -31,37 +31,9 @@ export const budgetsApi = {
     return response.data.data
   },
 
-  // Update budget
   async update(id: string, data: UpdateBudgetData): Promise<Budget> {
-    try {
-      // Check if we have an auth token
-      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-      console.log('Auth token exists:', !!token);
-      console.log('Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
-      
-      console.log('Updating budget:', { id, data });
-      console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL);
-      console.log('Request URL:', `/budgets/${id}`);
-      
-      const response = await api.patch<ApiResponse<Budget>>(`/budgets/${id}`, data);
-      console.log('Update response:', response.data);
-      return response.data.data;
-    } catch (error: any) {
-      console.error('Update budget error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          baseURL: error.config?.baseURL,
-          headers: error.config?.headers
-        }
-      });
-      throw error;
-    }
+    const response = await api.patch<ApiResponse<Budget>>(`/budgets/${id}`, data);
+    return response.data.data;
   },
 
   // Delete budget
@@ -83,6 +55,33 @@ export const budgetsApi = {
 
   async getEssentialItems(budgetId: string): Promise<EssentialItem[]> {
     const response = await api.get<ApiResponse<EssentialItem[]>>(`/budgets/${budgetId}/essential-items`)
+    return response.data.data
+  },
+
+  // Get budget by month
+  async getByMonth(month: string): Promise<Budget | null> {
+    try {
+      const response = await api.get<ApiResponse<Budget>>(`/budgets/month/${month}`)
+      return response.data.data
+    } catch (error) {
+      return null
+    }
+  },
+
+  async getAnalysisStats(month: string): Promise<AnalysisStats> {
+    if (!month) {
+      throw new Error('Month parameter is required')
+    }
+    const response = await api.get<ApiResponse<AnalysisStats>>('/budgets/analysis/stats', { params: { month } })
+    if (!response?.data?.data) {
+      return {
+        totalBudget: 0,
+        totalExpenses: 0,
+        remainingBudget: 0,
+        budgetUsedPercentage: 0,
+        budgetExists: false,
+      }
+    }
     return response.data.data
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
@@ -14,103 +14,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog'
-import { CreateExpenseData, Expense, ExpenseDialogProps } from '@/types'
+import { ExpenseDialogProps } from '@/types'
 import { Plus } from 'lucide-react'
 import { CategoryInput } from './category-input'
 import { useCategories } from '@/hooks/useCategories'
+import { useExpenseForm } from '@/hooks/useExpenseForm'
 
 export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpenChange, editingExpense }: ExpenseDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onOpenChange || setInternalOpen
   const { allCategories, addCustomCategory } = useCategories()
-  const [showAdvanced, setShowAdvanced] = useState(false)
   
-  const [formData, setFormData] = useState<CreateExpenseData>({
-    title: '',
-    amount: 0,
-    description: '',
-    category: '',
-    date: new Date().toISOString().split('T')[0]
+  const {
+    formData,
+    showAdvanced,
+    handleSubmit: handleFormSubmit,
+    handleFieldChange,
+    handleTextareaChange,
+    handleCategoryChange,
+    toggleAdvanced
+  } = useExpenseForm({
+    editingExpense,
+    onSubmit,
+    onClose: () => setOpen(false)
   })
 
-  // Update form data when editingExpense changes
-  useEffect(() => {
-    if (editingExpense) {
-      setFormData({
-        title: editingExpense.title,
-        amount: editingExpense.amount,
-        description: editingExpense.description || '',
-        category: editingExpense.category || '',
-        date: new Date(editingExpense.date).toISOString().split('T')[0]
-      })
-      setShowAdvanced(!!editingExpense.description || !!editingExpense.category)
-    } else {
-      setFormData({
-        title: '',
-        amount: 0,
-        description: '',
-        category: '',
-        date: new Date().toISOString().split('T')[0]
-      })
-      setShowAdvanced(false)
-    }
-  }, [editingExpense])
-
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.title || formData.amount <= 0) return
-    
-    onSubmit(formData)
-    setFormData({
-      title: '',
-      amount: 0,
-      description: '',
-      category: '',
-      date: new Date().toISOString().split('T')[0]
-    })
-    setOpen(false)
-    setShowAdvanced(false)
-  }
-
-  const handleChange = (field: keyof CreateExpenseData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev: CreateExpenseData) => ({
-      ...prev,
-      [field]: field === 'amount' ? parseFloat(e.target.value) || 0 : e.target.value
-    }))
-  }
-
-  const handleTextareaChange = (field: keyof CreateExpenseData) => (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    setFormData((prev: CreateExpenseData) => ({
-      ...prev,
-      [field]: e.target.value
-    }))
-  }
-
-  const handleCategoryChange = (value: string) => {
-    setFormData(prev => ({ ...prev, category: value }))
-  }
-
-  const handleAddCategory = (category: string) => {
-    addCustomCategory(category)
+    handleFormSubmit(e)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Expense
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px] p-0">
-        <DialogHeader className="px-6 pt-6 border-b border-border/10">
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Expense
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-[480px] p-0 max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/10 flex-shrink-0">
           <DialogTitle className="text-xl font-semibold text-foreground">
             {editingExpense ? 'Edit Expense' : 'Add Expense'}
           </DialogTitle>
@@ -118,8 +65,8 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
             {editingExpense ? 'Update the details of your expense below' : 'Enter the details of your expense below'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="px-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <div className="px-6 pt-4 space-y-5 overflow-y-auto flex-1 min-h-0">
             <div className="space-y-3">
               <Label htmlFor="title" className="text-sm font-medium text-foreground">
                 Title <span className="text-destructive">*</span>
@@ -127,7 +74,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
               <Input
                 id="title"
                 value={formData.title}
-                onChange={handleChange('title')}
+                onChange={handleFieldChange('title')}
                 placeholder="e.g., Coffee at Starbucks"
                 required
                 className="h-11 text-base"
@@ -141,7 +88,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                 </Label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                    $
+                    ₹
                   </div>
                   <Input
                     id="amount"
@@ -149,7 +96,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                     step="1"
                     min="0"
                     value={formData.amount}
-                    onChange={handleChange('amount')}
+                    onChange={handleFieldChange('amount')}
                     placeholder="0.00"
                     required
                     className="h-11 text-base pl-8"
@@ -165,7 +112,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                   value={formData.category}
                   onChange={handleCategoryChange}
                   categories={allCategories}
-                  onAddCategory={handleAddCategory}
+                  onAddCategory={addCustomCategory}
                 />
               </div>
             </div>
@@ -173,7 +120,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
             {/* Advanced Fields Toggle */}
             <button
               type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
+              onClick={toggleAdvanced}
               className="hover:cursor-pointer w-full text-sm text-muted-foreground hover:text-foreground font-medium transition-colors duration-200 flex items-start justify-start mb-2"
             >
               <span className="mr-2">{showAdvanced ? '−' : '+'}</span>
@@ -192,7 +139,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                       id="date"
                       type="date"
                       value={formData.date}
-                      onChange={handleChange('date')}
+                      onChange={handleFieldChange('date')}
                       required
                       className="h-11 text-base"
                     />
@@ -215,7 +162,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
             )}
           </div>
           
-          <DialogFooter className="px-6 pb-6 pt-2">
+          <DialogFooter className="px-6 pb-4 sm:pb-6 pt-4 border-t border-border/10 flex-shrink-0 bg-background">
             <Button 
               type="submit" 
               className="w-full h-11 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"

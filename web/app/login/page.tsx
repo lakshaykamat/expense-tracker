@@ -35,9 +35,12 @@ export default function LoginPage() {
       if (response.success) {
         AuthService.setTokens(response.data.access_token, response.data.refresh_token)
         router.push("/home")
+      } else {
+        setError(response.message || "Login failed")
       }
     } catch (err: any) {
-      setError(err.message || "Login failed")
+      const errorMessage = err?.message || err?.response?.data?.message || "Invalid email or password"
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

@@ -3,16 +3,21 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { DollarSign, PieChart, Home, TrendingUp } from 'lucide-react'
+import { Wallet, PieChart, TrendingUp, User } from 'lucide-react'
 
 const navigation = [
-  { name: 'Expenses', href: '/home', icon: Home },
+  { name: 'Expenses', href: '/home', icon: Wallet },
   { name: 'Budgets', href: '/budgets', icon: PieChart },
   { name: 'Analysis', href: '/analysis', icon: TrendingUp },
+  { name: 'Profile', href: '/profile', icon: User },
 ]
 
 export function Navigation() {
   const pathname = usePathname()
+
+  if (pathname === '/login' || pathname === '/signup') {
+    return null
+  }
 
   return (
     <nav className="hidden md:block border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

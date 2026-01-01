@@ -109,9 +109,6 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
                 <div className="text-3xl font-light text-gray-900">
                   {formatCurrency(displayBudget.totalBudget)}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {displayBudget.essentialItems.length} items
-                </div>
               </div>
             </div>
           </div>

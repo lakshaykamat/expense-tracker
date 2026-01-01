@@ -7,9 +7,10 @@ import {
 } from '@/types'
 
 export const expensesApi = {
-  getAll: async (): Promise<ApiResponse<Expense[]>> => {
+  getAll: async (month?: string): Promise<ApiResponse<Expense[]>> => {
     try {
-      const response = await api.get('/expenses')
+      const params = month ? { month } : {}
+      const response = await api.get('/expenses', { params })
       return response.data
     } catch (error: any) {
       throw error
@@ -37,6 +38,17 @@ export const expensesApi = {
   delete: async (id: string): Promise<ApiResponse<{ message: string }>> => {
     try {
       const response = await api.delete(`/expenses/${id}`)
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  exportToCSV: async (): Promise<Blob> => {
+    try {
+      const response = await api.get('/expenses/export/csv', {
+        responseType: 'blob'
+      })
       return response.data
     } catch (error: any) {
       throw error
