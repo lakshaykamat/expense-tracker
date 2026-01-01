@@ -167,6 +167,105 @@ Authorization: Bearer <access_token>
 
 ---
 
+### 👤 Users
+
+All user endpoints require authentication.
+
+#### Get User Profile
+```http
+GET /users/me
+Authorization: Bearer <access_token>
+```
+
+**Purpose:**
+Returns the profile information for the authenticated user.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Profile data",
+  "data": {
+    "message": "Profile data",
+    "user": {
+      "id": "639a7b8c9d1f2e3a4b5c6d7e",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "lastLoginAt": "2025-12-30T13:26:00.000Z"
+    }
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/users/me"
+}
+```
+
+#### Export Data to CSV
+```http
+GET /users/export/csv
+Authorization: Bearer <access_token>
+```
+
+**Purpose:**
+Exports all expenses and budgets for the authenticated user as a CSV file. The CSV contains two sections: EXPENSES and BUDGETS.
+
+**Response (200):**
+- **Content-Type**: `text/csv`
+- **Content-Disposition**: `attachment; filename="expense-tracker-export-YYYY-MM-DD.csv"`
+- **Body**: CSV file content
+
+**CSV Format:**
+The CSV file contains two sections:
+
+1. **EXPENSES Section:**
+   - Headers: `_id`, `title`, `amount`, `description`, `category`, `date`, `createdAt`, `updatedAt`
+   - One row per expense
+
+2. **BUDGETS Section:**
+   - Headers: `_id`, `month`, `essentialItems`, `totalBudget`, `userId`, `createdAt`, `updatedAt`
+   - One row per budget
+   - `essentialItems` is a JSON string
+
+**Example CSV Content:**
+```csv
+EXPENSES
+_id,title,amount,description,category,date,createdAt,updatedAt
+639a7b8c9d1f2e3a4b5c6d7f,Coffee,5.5,Morning coffee,Food,2025-12-30,2025-12-30,2025-12-30
+
+BUDGETS
+_id,month,essentialItems,totalBudget,userId,createdAt,updatedAt
+639a7b8c9d1f2e3a4b5c6d80,2025-01,"[{""name"":""Rent"",""amount"":1000}]",1000,639a7b8c9d1f2e3a4b5c6d7e,2025-12-30,2025-12-30
+```
+
+**Empty Data Response:**
+If the user has no expenses or budgets, the CSV will still be generated with appropriate "No expenses found" or "No budgets found" messages.
+
+**Error Responses:**
+- **401 Unauthorized**: Invalid or missing authentication token
+- **500 Internal Server Error**: Server error during export
+
+**Frontend Usage:**
+```javascript
+// Using fetch
+const response = await fetch('/users/export/csv', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+});
+
+const blob = await response.blob();
+const url = window.URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'expense-tracker-export.csv';
+document.body.appendChild(a);
+a.click();
+window.URL.revokeObjectURL(url);
+document.body.removeChild(a);
+```
+
+---
+
 ### 💰 Expenses
 
 All expense endpoints require authentication.
@@ -218,9 +317,15 @@ Authorization: Bearer <access_token>
 
 #### Get All Expenses
 ```http
-GET /expenses
+GET /expenses?month=YYYY-MM
 Authorization: Bearer <access_token>
 ```
+
+**Query Parameters:**
+- `month` (string, optional): Filter expenses by month in "YYYY-MM" format (e.g., "2025-01"). If omitted, returns all expenses for the user.
+
+**Purpose:**
+Returns expenses for the authenticated user, optionally filtered by month. Results are sorted by date (descending - newest first).
 
 **Response (200):**
 ```json
@@ -236,10 +341,8 @@ Authorization: Bearer <access_token>
       "description": "Morning coffee at Starbucks",
       "category": "Food",
       "date": "2025-12-30T12:00:00.000Z",
-      "userId": "639a7b8c9d1f2e3a4b5c6d7e",
       "createdAt": "2025-12-30T13:26:00.000Z",
-      "updatedAt": "2025-12-30T13:26:00.000Z",
-      "__v": 0
+      "updatedAt": "2025-12-30T13:26:00.000Z"
     }
   ],
   "timestamp": "2025-12-30T13:26:00.000Z",
@@ -247,7 +350,6 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Note**: Expenses are returned sorted by `createdAt` in descending order (newest first).
 
 #### Get Single Expense
 ```http
@@ -695,6 +797,9 @@ GET /budgets
 Authorization: Bearer <access_token>
 ```
 
+**Purpose:**
+Returns all budgets for the authenticated user, sorted by month (descending). Each budget includes calculated fields: `totalBudget` (sum of essential item amounts) and `spentAmount` (total expenses for that month).
+
 **Response (200):**
 ```json
 {
@@ -704,14 +809,13 @@ Authorization: Bearer <access_token>
   "data": [
     {
       "_id": "639a7b8c9d1f2e3a4b5c6d7f",
-      "name": "Monthly Budget",
-      "amount": 2000,
       "month": "2025-01",
-      "year": 2025,
-      "userId": "639a7b8c9d1f2e3a4b5c6d7e",
-      "essentialItems": ["Rent", "Groceries", "Utilities"],
-      "spentAmount": 150.50,
-      "isActive": true,
+      "essentialItems": [
+        { "name": "Rent", "amount": 1000 },
+        { "name": "Groceries", "amount": 500 }
+      ],
+      "totalBudget": 1500,
+      "spentAmount": 750.50,
       "createdAt": "2025-12-30T13:26:00.000Z",
       "updatedAt": "2025-12-30T13:26:00.000Z"
     }
@@ -721,9 +825,55 @@ Authorization: Bearer <access_token>
 }
 ```
 
+
 #### Get Current Budget
 ```http
 GET /budgets/current
+Authorization: Bearer <access_token>
+```
+
+**Purpose:**
+Returns the budget for the current month. If no budget exists for the current month, attempts to copy from the most recent previous month's budget.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+    "month": "2025-01",
+    "essentialItems": [
+      { "name": "Rent", "amount": 1000 },
+      { "name": "Groceries", "amount": 500 }
+    ],
+    "totalBudget": 1500,
+    "spentAmount": 750.50,
+    "createdAt": "2025-12-30T13:26:00.000Z",
+    "updatedAt": "2025-12-30T13:26:00.000Z"
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/current"
+}
+```
+
+**Response (200) - No Budget:**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": null,
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/current"
+}
+```
+
+
+#### Get Budget by ID
+```http
+GET /budgets/:id
 Authorization: Bearer <access_token>
 ```
 
@@ -735,27 +885,111 @@ Authorization: Bearer <access_token>
   "message": "Resource retrieved successfully",
   "data": {
     "_id": "639a7b8c9d1f2e3a4b5c6d7f",
-    "name": "Monthly Budget",
-    "amount": 2000,
     "month": "2025-01",
-    "year": 2025,
-    "userId": "639a7b8c9d1f2e3a4b5c6d7e",
-    "essentialItems": ["Rent", "Groceries", "Utilities"],
-    "spentAmount": 150.50,
-    "isActive": true,
+    "essentialItems": [
+      { "name": "Rent", "amount": 1000 },
+      { "name": "Groceries", "amount": 500 }
+    ],
+    "totalBudget": 1500,
+    "spentAmount": 750.50,
     "createdAt": "2025-12-30T13:26:00.000Z",
     "updatedAt": "2025-12-30T13:26:00.000Z"
   },
   "timestamp": "2025-12-30T13:26:00.000Z",
-  "path": "/budgets/current"
+  "path": "/budgets/639a7b8c9d1f2e3a4b5c6d7f"
 }
 ```
 
-#### Get Budget by ID
+
+#### Get Budget by Month
 ```http
-GET /budgets/:id
+GET /budgets/month/:month
 Authorization: Bearer <access_token>
 ```
+
+**Path Parameters:**
+- `month` (string, required): Month in "YYYY-MM" format (e.g., "2025-01")
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+    "month": "2025-01",
+    "essentialItems": [
+      { "name": "Rent", "amount": 1000 },
+      { "name": "Groceries", "amount": 500 }
+    ],
+    "totalBudget": 1500,
+    "spentAmount": 750.50,
+    "createdAt": "2025-12-30T13:26:00.000Z",
+    "updatedAt": "2025-12-30T13:26:00.000Z"
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/month/2025-01"
+}
+```
+
+**Response (404):**
+Returns null if no budget exists for the specified month.
+
+
+#### Get Analysis Stats
+```http
+GET /budgets/analysis/stats?month=YYYY-MM
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+- `month` (string, required): Month in "YYYY-MM" format (e.g., "2025-01")
+
+**Purpose:**
+Returns budget analysis statistics for a specific month, including calculated totals, percentages, and remaining budget.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "budget": {
+      "_id": "639a7b8c9d1f2e3a4b5c6d7f",
+      "month": "2025-01",
+      "essentialItems": [
+        { "name": "Rent", "amount": 1000 },
+        { "name": "Groceries", "amount": 500 }
+      ],
+      "totalBudget": 1500,
+      "spentAmount": 750.50,
+      "createdAt": "2025-12-30T13:26:00.000Z",
+      "updatedAt": "2025-12-30T13:26:00.000Z"
+    },
+    "totalExpenses": 750.50,
+    "totalBudget": 1500,
+    "remainingBudget": 749.50,
+    "budgetUsedPercentage": 50.03
+  },
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/analysis/stats"
+}
+```
+
+**Response (200) - No Budget:**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": null,
+  "timestamp": "2025-12-30T13:26:00.000Z",
+  "path": "/budgets/analysis/stats"
+}
+```
+
 
 #### Update Budget
 ```http
@@ -1089,4 +1323,4 @@ For API issues or questions:
 - Ensure proper request headers
 - Validate request body format
 
-**Last Updated**: December 30, 2025
+**Last Updated**: January 1, 2026

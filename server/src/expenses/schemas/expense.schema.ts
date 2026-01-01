@@ -28,5 +28,9 @@ export class Expense {
 }
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);
 
+// Add indexes for performance
+ExpenseSchema.index({ userId: 1, date: -1 }); // Compound index for month queries and sorting
+ExpenseSchema.index({ userId: 1 }); // Index for user queries
+
 
 

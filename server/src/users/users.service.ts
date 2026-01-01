@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ExpensesService } from '../expenses/expenses.service';
+import { BudgetsService } from '../budgets/budgets.service';
+import { convertToCSV } from '../common/utils/csv.utils';
 
 export interface UserProfile {
   message: string;
@@ -12,6 +15,11 @@ export interface UserProfile {
 
 @Injectable()
 export class UsersService {
+  constructor(
+    private readonly expensesService: ExpensesService,
+    private readonly budgetsService: BudgetsService
+  ) {}
+
   getProfile(user: any): UserProfile {
     return {
       message: 'Profile data',
@@ -22,5 +30,30 @@ export class UsersService {
         lastLoginAt: user.lastLoginAt,
       },
     };
+  }
+
+  async exportDataToCSV(user: any): Promise<{ csv: string; filename: string }> {
+    const userId = user.userId || user._id?.toString();
+    
+    const [expenses, budgets] = await Promise.all([
+      this.expensesService.findAllForExport(userId),
+      this.budgetsService.findAllForExport(userId)
+    ]);
+
+    const expenseHeaders = ['_id', 'title', 'amount', 'description', 'category', 'date', 'createdAt', 'updatedAt'];
+    const budgetHeaders = ['_id', 'month', 'essentialItems', 'totalBudget', 'userId', 'createdAt', 'updatedAt'];
+    
+    const expenseCSV = expenses.length > 0 
+      ? `EXPENSES\n${convertToCSV(expenses, expenseHeaders)}\n\n`
+      : 'EXPENSES\nNo expenses found.\n\n';
+    
+    const budgetCSV = budgets.length > 0
+      ? `BUDGETS\n${convertToCSV(budgets, budgetHeaders)}`
+      : 'BUDGETS\nNo budgets found.';
+    
+    const csv = expenseCSV + budgetCSV;
+    const filename = `expense-tracker-export-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    return { csv, filename };
   }
 }

@@ -9,13 +9,18 @@ import {
   UseGuards,
   Request,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  Query,
+  BadRequestException,
+  Res
 } from '@nestjs/common';
+import { Response } from 'express';
 import { BudgetsService } from './budgets.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { type EssentialItem } from './schemas/budget.schema';
+import { convertToCSV } from '../common/utils/csv.utils';
 
 @Controller('budgets')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +40,19 @@ export class BudgetsController {
   @Get('current')
   getCurrent(@Request() req) {
     return this.budgetsService.getCurrentBudget(req.user.userId);
+  }
+
+  @Get('month/:month')
+  findByMonth(@Param('month') month: string, @Request() req) {
+    return this.budgetsService.findByMonth(req.user.userId, month);
+  }
+
+  @Get('analysis/stats')
+  getAnalysisStats(@Query('month') month: string, @Request() req) {
+    if (!month) {
+      throw new BadRequestException('Month parameter is required');
+    }
+    return this.budgetsService.getAnalysisStats(req.user.userId, month);
   }
 
   @Get(':id')

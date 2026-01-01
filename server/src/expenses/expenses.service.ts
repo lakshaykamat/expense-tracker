@@ -1,29 +1,56 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { Expense, ExpenseDocument } from './schemas/expense.schema';
+import { getMonthDateRange, normalizeDateToUTC } from '../common/utils/date.utils';
+import { isValidObjectId, isValidMonthFormat } from '../common/utils/validation.utils';
 
 @Injectable()
 export class ExpensesService {
   constructor(@InjectModel(Expense.name) private readonly expenseModel: Model<ExpenseDocument>) {}
 
   async create(createExpenseDto: CreateExpenseDto, userId: string) {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    const date = createExpenseDto.date 
+      ? normalizeDateToUTC(createExpenseDto.date)
+      : new Date();
+    
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('Invalid date format');
+    }
+    
     const expense = new this.expenseModel({
       ...createExpenseDto,
-      userId,
-      date: createExpenseDto.date ? new Date(createExpenseDto.date) : new Date(),
+      userId: new Types.ObjectId(userId),
+      date,
     });
     
     return expense.save();
   }
 
   async bulkCreate(createExpenseDtos: CreateExpenseDto[], userId: string) {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    if (!Array.isArray(createExpenseDtos) || createExpenseDtos.length === 0) {
+      throw new BadRequestException('Expenses array is required and cannot be empty');
+    }
+    
+    if (createExpenseDtos.length > 100) {
+      throw new BadRequestException('Cannot create more than 100 expenses at once');
+    }
+    
+    const userIdObj = new Types.ObjectId(userId);
     const expenses = createExpenseDtos.map(dto => ({
       ...dto,
-      userId,
-      date: dto.date ? new Date(dto.date) : new Date(),
+      userId: userIdObj,
+      date: dto.date ? normalizeDateToUTC(dto.date) : new Date(),
     }));
 
     const result = await this.expenseModel.insertMany(expenses);
@@ -33,11 +60,132 @@ export class ExpensesService {
     };
   }
 
-  async findAll(userId: string) {
-    return this.expenseModel.find({ userId }).sort({ createdAt: -1 });
+  async findAll(userId: string, month?: string) {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    const query: any = { userId };
+    
+    if (month) {
+      if (!isValidMonthFormat(month)) {
+        throw new BadRequestException('Invalid month format. Expected YYYY-MM');
+      }
+      try {
+        const { startDate, endDate } = getMonthDateRange(month);
+        query.date = {
+          $gte: startDate,
+          $lt: endDate
+        };
+      } catch (error: any) {
+        throw new BadRequestException(error.message || 'Invalid month format');
+      }
+    }
+    
+    return this.expenseModel.find(query).sort({ date: -1 }).lean();
+  }
+
+  async findAllForExport(userId: string): Promise<any[]> {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    const expenses = await this.expenseModel.find({ userId }).sort({ date: -1 }).lean();
+    return expenses.map((expense: any) => ({
+      _id: expense._id.toString(),
+      title: expense.title,
+      amount: expense.amount,
+      description: expense.description || '',
+      category: expense.category || '',
+      date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : '',
+      createdAt: expense.createdAt ? new Date(expense.createdAt).toISOString().split('T')[0] : '',
+      updatedAt: expense.updatedAt ? new Date(expense.updatedAt).toISOString().split('T')[0] : ''
+    }));
+  }
+
+  async getTotalExpensesForMonth(userId: string, month: string): Promise<number> {
+    if (!isValidMonthFormat(month)) {
+      return 0;
+    }
+    
+    if (!isValidObjectId(userId)) {
+      return 0;
+    }
+    
+    let startDate: Date;
+    let endDate: Date;
+    try {
+      const range = getMonthDateRange(month);
+      startDate = range.startDate;
+      endDate = range.endDate;
+    } catch {
+      return 0;
+    }
+
+    try {
+      const userIdObj = new Types.ObjectId(userId);
+      
+      const result = await this.expenseModel.aggregate([
+        {
+          $match: {
+            $or: [
+              { userId: userIdObj },
+              { userId: userId }
+            ],
+            date: {
+              $gte: startDate,
+              $lt: endDate
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$amount' }
+          }
+        }
+      ]);
+
+      const total = result.length > 0 && result[0].total !== null && result[0].total !== undefined
+        ? Number(result[0].total)
+        : 0;
+      
+      return total;
+    } catch (error) {
+      console.error('Error calculating total expenses for month:', month, 'userId:', userId, error);
+      return 0;
+    }
+  }
+
+  async getTotalExpensesForMonths(userId: string, months: string[]): Promise<Map<string, number>> {
+    if (months.length === 0) {
+      return new Map();
+    }
+
+    const results = await Promise.all(
+      months.map(async (month) => ({
+        month,
+        total: await this.getTotalExpensesForMonth(userId, month)
+      }))
+    );
+
+    const totalsMap = new Map<string, number>();
+    results.forEach(({ month, total }) => {
+      totalsMap.set(month, total);
+    });
+
+    return totalsMap;
   }
 
   async findOne(id: string, userId: string) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid expense ID format');
+    }
+    
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
     const expense = await this.expenseModel.findOne({ _id: id, userId });
     if (!expense) {
       throw new NotFoundException('Expense not found');
@@ -46,12 +194,26 @@ export class ExpensesService {
   }
 
   async update(id: string, updateExpenseDto: UpdateExpenseDto, userId: string) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid expense ID format');
+    }
+    
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    const updateData: any = { ...updateExpenseDto };
+    if (updateExpenseDto.date) {
+      const date = normalizeDateToUTC(updateExpenseDto.date);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException('Invalid date format');
+      }
+      updateData.date = date;
+    }
+    
     const expense = await this.expenseModel.findOneAndUpdate(
       { _id: id, userId },
-      { 
-        ...updateExpenseDto,
-        ...(updateExpenseDto.date && { date: new Date(updateExpenseDto.date) })
-      },
+      updateData,
       { new: true }
     );
     
@@ -69,20 +231,32 @@ export class ExpensesService {
     category?: string;
     date: string;
   }>, userId: string) {
-    // Get unique months from the expenses
-    const uniqueMonths = [...new Set(expenses.map(expense => 
-      expense.date.substring(0, 7) // Extract YYYY-MM
-    ))];
+    if (!Array.isArray(expenses) || expenses.length === 0) {
+      throw new BadRequestException('Expenses array is required and cannot be empty');
+    }
+    
+    if (expenses.length > 100) {
+      throw new BadRequestException('Cannot update more than 100 expenses at once');
+    }
+    
+    const uniqueMonths = [...new Set(expenses
+      .map(expense => expense.date?.substring(0, 7))
+      .filter(month => month && isValidMonthFormat(month))
+    )];
+    
+    if (uniqueMonths.length === 0) {
+      throw new BadRequestException('No valid month dates found in expenses');
+    }
 
     const results: any[] = [];
 
-    // For each month, delete existing expenses and create new ones
     for (const month of uniqueMonths) {
-      const startDate = new Date(`${month}-01`);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1);
+      const { startDate, endDate } = getMonthDateRange(month);
       
-      // Delete existing expenses for this month and user
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException('Invalid user ID format');
+      }
+      
       await this.expenseModel.deleteMany({
         userId,
         date: {
@@ -91,16 +265,15 @@ export class ExpensesService {
         }
       });
 
-      // Filter expenses for this month
       const monthExpenses = expenses.filter(expense => 
         expense.date.substring(0, 7) === month
       );
 
-      // Create new expenses for this month
+      const userIdObj = new Types.ObjectId(userId);
       const newExpenses = monthExpenses.map(expense => ({
         ...expense,
-        userId,
-        date: new Date(expense.date)
+        userId: userIdObj,
+        date: normalizeDateToUTC(expense.date)
       }));
 
       const result = await this.expenseModel.insertMany(newExpenses);
@@ -114,6 +287,14 @@ export class ExpensesService {
   }
 
   async remove(id: string, userId: string) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid expense ID format');
+    }
+    
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
     const result = await this.expenseModel.deleteOne({ _id: id, userId });
     
     if (result.deletedCount === 0) {
@@ -124,7 +305,24 @@ export class ExpensesService {
   }
 
   async bulkRemove(ids: string[], userId: string) {
-    const result = await this.expenseModel.deleteMany({ _id: { $in: ids }, userId });
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new BadRequestException('IDs array is required and cannot be empty');
+    }
+    
+    if (ids.length > 100) {
+      throw new BadRequestException('Cannot delete more than 100 expenses at once');
+    }
+    
+    const validIds = ids.filter(id => isValidObjectId(id));
+    if (validIds.length === 0) {
+      throw new BadRequestException('No valid expense IDs provided');
+    }
+    
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+    
+    const result = await this.expenseModel.deleteMany({ _id: { $in: validIds }, userId });
     
     if (result.deletedCount === 0) {
       throw new NotFoundException('No expenses found to delete');

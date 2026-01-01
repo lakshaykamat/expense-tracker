@@ -23,3 +23,7 @@ export class Budget {
 }
 
 export const BudgetSchema = SchemaFactory.createForClass(Budget);
+
+// Add indexes for performance
+BudgetSchema.index({ userId: 1, month: 1 }, { unique: true }); // Compound index for lookups and uniqueness
+BudgetSchema.index({ userId: 1 }); // Index for findAll queries
