@@ -84,7 +84,7 @@ export function BudgetDialog({
                   className="flex-1 h-9 md:h-10 text-sm md:text-base"
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEssentialItem())}
                 />
-                <div className="relative">
+                <div className="relative flex-1">
                   <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none text-sm md:text-base">
                     ₹
                   </div>
@@ -95,7 +95,7 @@ export function BudgetDialog({
                     min="0"
                     value={newItemAmount}
                     onChange={(e) => setNewItemAmount(e.target.value)}
-                    className="w-32 md:w-36 h-9 md:h-10 text-sm md:text-base pl-6 pr-2"
+                    className="w-full h-9 md:h-10 text-sm md:text-base pl-6 pr-2"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEssentialItem())}
                   />
                 </div>
