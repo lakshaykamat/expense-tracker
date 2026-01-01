@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api } from './api.client'
 import type { ApiResponse, Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, AnalysisStats } from '@/types'
 
 export const budgetsApi = {

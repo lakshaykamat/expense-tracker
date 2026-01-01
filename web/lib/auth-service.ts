@@ -1,4 +1,4 @@
-import { api, ApiResponse, LoginCredentials, SignupCredentials, AuthResponse } from './api'
+import { api, ApiResponse, LoginCredentials, SignupCredentials, AuthResponse } from './api.client'
 import { CookieUtils } from './cookie-utils'
 
 export class AuthService {
