@@ -36,9 +36,12 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // Add auth token to request
 const addAuthHeader = (config: any) => {
-  const token = CookieUtils.getAccessToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  // Only access cookies in browser environment
+  if (typeof document !== 'undefined') {
+    const token = CookieUtils.getAccessToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
   return config
 }
@@ -54,6 +57,11 @@ const onRequestError = (error: any) => {
 
 // Refresh access token
 const refreshAccessToken = async () => {
+  // Only access cookies in browser environment
+  if (typeof document === 'undefined') {
+    throw new Error('Cannot refresh token in server environment')
+  }
+  
   const refreshToken = CookieUtils.getRefreshToken()
   if (!refreshToken) {
     throw new Error('No refresh token available')
@@ -75,12 +83,22 @@ const refreshAccessToken = async () => {
 const handleRefreshFailure = (error: any) => {
   processQueue(error, null)
   CookieUtils.clearAuthTokens()
-  window.location.href = '/login'
+  
+  // Only redirect in browser environment
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login'
+  }
+  
   return Promise.reject(error)
 }
 
 // Handle token refresh
 const handleTokenRefresh = async (originalRequest: any) => {
+  // Only attempt token refresh in browser environment
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Token refresh not available in server environment'))
+  }
+  
   if (isRefreshing) {
     // Queue the request if refresh is in progress
     return new Promise((resolve, reject) => {
