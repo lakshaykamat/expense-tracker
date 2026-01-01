@@ -20,14 +20,16 @@ export default function HomePage() {
   
   // Initialize with latest month on first load
   React.useEffect(() => {
-    if (!initialized && expenseMonths.length > 0) {
-      const latestMonth = expenseMonths[0]
-      setSelectedMonth(latestMonth)
-      setInitialized(true)
-    } else if (!initialized && expenseMonths.length === 0 && !loading) {
-      // No expenses exist, set to current month
-      setSelectedMonth(getCurrentMonth())
-      setInitialized(true)
+    if (!initialized) {
+      if (expenseMonths.length > 0) {
+        const latestMonth = expenseMonths[0]
+        setSelectedMonth(latestMonth)
+        setInitialized(true)
+      } else if (!loading) {
+        // No expenses exist or API call completed, set to current month
+        setSelectedMonth(getCurrentMonth())
+        setInitialized(true)
+      }
     }
   }, [expenseMonths, initialized, loading])
   const dialogHook = useExpenseDialog()
@@ -39,7 +41,7 @@ export default function HomePage() {
     selectedMonth: selectedMonth || getCurrentMonth()
   })
 
-  if (!initialized || loading && expenses.length === 0) {
+  if (!initialized || (loading && expenses.length === 0)) {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-[60vh]">

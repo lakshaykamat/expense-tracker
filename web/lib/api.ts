@@ -2,7 +2,12 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { CookieUtils } from './cookie-utils'
 
 // API base configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
+
+// Validate API URL is set
+if (!process.env.NEXT_PUBLIC_API_URL && typeof window !== 'undefined') {
+  console.warn('NEXT_PUBLIC_API_URL is not set. Using default:', API_BASE_URL)
+}
 
 // Create axios instance with default configuration
 export const api: AxiosInstance = axios.create({
