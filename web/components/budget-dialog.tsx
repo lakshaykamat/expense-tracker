@@ -28,7 +28,7 @@ export function BudgetDialog({
     addEssentialItem,
     removeEssentialItem,
     setFormDataMonth
-  } = useBudgetForm({ editingBudget, onSubmit, open })
+  } = useBudgetForm({ editingBudget, onSubmit, open: open ?? false })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
