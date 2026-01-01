@@ -12,6 +12,8 @@ import { usersApi } from '@/lib/users-api'
 import { formatDate } from '@/utils/date.utils'
 import { LogOut, Mail, Calendar, Download } from 'lucide-react'
 
+export const dynamic = "force-dynamic";
+
 export default function ProfilePage() {
   const router = useRouter()
   const { user, loading, error } = useUser()

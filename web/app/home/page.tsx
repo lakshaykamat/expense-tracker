@@ -12,6 +12,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { getCurrentMonth } from '@/utils/date.utils'
 import { isValidMonthFormat } from '@/utils/validation.utils'
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   const [initialized, setInitialized] = React.useState(false)
   const [selectedMonth, setSelectedMonth] = React.useState<string | null>(null)

@@ -12,6 +12,8 @@ import { formatCurrency } from '@/utils/currency.utils'
 import { getProgressColor } from '@/utils/analysis.utils'
 import { EmptyState } from '@/components/empty-state'
 
+export const dynamic = "force-dynamic";
+
 export default function AnalysisPage() {
   const { budgets, currentBudget, loading: budgetsLoading } = useBudgets()
   const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection({

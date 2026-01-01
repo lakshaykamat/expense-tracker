@@ -1,52 +1,55 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Public routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/']
+// Routes that do NOT require authentication
+const PUBLIC_ROUTES = ['/login', '/signup', '/']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // For middleware, we can't access localStorage directly
-  // We'll check for a cookie-based token or use a different approach
+  // Read auth token from cookies (Edge-safe)
   const token = request.cookies.get('access_token')?.value
 
-  // Check if the current path is public
-  const isPublicRoute = publicRoutes.some(route => pathname === route)
+  // Check if route is public
+  const isPublicRoute = PUBLIC_ROUTES.some(
+    route => pathname === route || pathname.startsWith(route + '/')
+  )
 
-  // If user is not authenticated and trying to access protected route
+  /**
+   * 1. User NOT logged in and accessing protected route
+   * → redirect to /login
+   */
   if (!token && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // If user has token and trying to access auth routes, redirect to home
-  if (token && (pathname === '/login' || pathname === '/signup')) {
+  /**
+   * 2. User IS logged in and trying to access auth pages
+   * → redirect to /home
+   */
+  if (
+    token &&
+    (pathname === '/login' ||
+      pathname === '/signup' ||
+      pathname === '/')
+  ) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 
-  // If user has token and accessing root, redirect to home
-  if (token && pathname === '/') {
-    return NextResponse.redirect(new URL('/home', request.url))
-  }
-
+  /**
+   * 3. Allow request
+   */
   return NextResponse.next()
 }
 
+/**
+ * Apply middleware to all routes
+ * except static files and Next.js internals
+ */
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - sw.js (service worker)
-     * - manifest.json (PWA manifest)
-     * - public folder files
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icon-.*\\.png|.*\\.svg).*)',
   ],
 }
-

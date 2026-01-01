@@ -9,6 +9,8 @@ import { BudgetDialog } from '@/components/budget-dialog'
 import { BudgetFab } from '@/components/budget-fab'
 import { Plus } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default function BudgetsPage() {
   const budgetsHook = useBudgets();
   const {
