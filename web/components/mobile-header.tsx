@@ -2,11 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 export function MobileHeader() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
 
-  if (pathname === '/login' || pathname === '/signup') {
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || pathname === '/login' || pathname === '/signup') {
     return null
   }
 

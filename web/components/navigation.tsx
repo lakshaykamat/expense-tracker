@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Wallet, PieChart, TrendingUp, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 const navigation = [
   { name: 'Expenses', href: '/home', icon: Wallet },
@@ -14,8 +15,13 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
 
-  if (pathname === '/login' || pathname === '/signup') {
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || pathname === '/login' || pathname === '/signup') {
     return null
   }
 

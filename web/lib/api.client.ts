@@ -142,6 +142,21 @@ const onResponseSuccess = (response: AxiosResponse) => {
 const onResponseError = async (error: any) => {
   const originalRequest = error.config
 
+  // Handle network errors more gracefully
+  if (!error.response) {
+    // Network error (no response received)
+    if (error.code === 'ECONNABORTED') {
+      error.message = 'Request timeout - please check your connection'
+    } else if (error.code === 'ERR_NETWORK') {
+      error.message = 'Network error - please check your connection'
+    } else if (!navigator.onLine) {
+      error.message = 'You are offline - please check your internet connection'
+    } else {
+      error.message = 'Unable to connect to server - please try again'
+    }
+    return Promise.reject(error)
+  }
+
   // Handle 401 errors with token refresh (only for authenticated endpoints)
   // Skip refresh for login/register endpoints to avoid loops
   const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
