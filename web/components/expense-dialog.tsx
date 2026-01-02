@@ -24,7 +24,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onOpenChange || setInternalOpen
-  const { allCategories, addCustomCategory } = useCategories()
+  const { allCategories } = useCategories()
   
   const {
     formData,
@@ -95,7 +95,7 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                     type="number"
                     step="1"
                     min="0"
-                    value={formData.amount}
+                    value={formData.amount || ''}
                     onChange={handleFieldChange('amount')}
                     placeholder="0.00"
                     required
@@ -112,7 +112,6 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                   value={formData.category}
                   onChange={handleCategoryChange}
                   categories={allCategories}
-                  onAddCategory={addCustomCategory}
                 />
               </div>
             </div>
