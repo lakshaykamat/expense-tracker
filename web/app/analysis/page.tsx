@@ -15,14 +15,10 @@ import { EmptyState } from '@/components/empty-state'
 export const dynamic = "force-dynamic";
 
 export default function AnalysisPage() {
-  const { budgets, currentBudget, loading: budgetsLoading } = useBudgets()
-  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection({
-    budgets,
-    currentBudget
-  })
+  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
   const { analysisStats, loading: statsLoading } = useAnalysisStats(selectedMonth)
 
-  const loading = budgetsLoading || statsLoading
+  const loading = statsLoading
 
   if (loading) {
     return (

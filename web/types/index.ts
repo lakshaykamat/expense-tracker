@@ -137,6 +137,7 @@ export interface BudgetDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   editingBudget?: Budget | null
+  defaultMonth?: string
 }
 
 export interface BudgetListProps {
@@ -193,6 +194,7 @@ export interface UseBudgetsReturn {
   error: string | null
   fetchBudgets: () => Promise<void>
   fetchCurrentBudget: () => Promise<void>
+  fetchBudgetByMonth: (month: string) => Promise<void>
   addBudget: (data: CreateBudgetData) => Promise<{ success: boolean; error?: string }>
   updateBudget: (id: string, data: UpdateBudgetData) => Promise<{ success: boolean; error?: string }>
   deleteBudget: (id: string) => Promise<{ success: boolean; error?: string }>

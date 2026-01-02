@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { budgetsApi } from '@/lib/budgets-api'
 import type { Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, UseBudgetsReturn } from '@/types'
+import { isValidMonthFormat } from '@/utils/validation.utils'
 
-export function useBudgets(): UseBudgetsReturn {
+export function useBudgets(month?: string): UseBudgetsReturn {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [currentBudget, setCurrentBudget] = useState<Budget | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchBudgets = useCallback(async () => {
@@ -16,6 +17,26 @@ export function useBudgets(): UseBudgetsReturn {
       setBudgets(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch budgets')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchBudgetByMonth = useCallback(async (monthParam: string) => {
+    if (!monthParam || !isValidMonthFormat(monthParam)) {
+      setCurrentBudget(null)
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await budgetsApi.getByMonth(monthParam)
+      setCurrentBudget(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch budget')
+      setCurrentBudget(null)
     } finally {
       setLoading(false)
     }
@@ -140,11 +161,15 @@ export function useBudgets(): UseBudgetsReturn {
     }
   }, [currentBudget])
 
-  // Fetch budgets on mount
+  // Fetch budget by month when month prop changes
   useEffect(() => {
-    fetchBudgets()
-    fetchCurrentBudget()
-  }, [fetchBudgets, fetchCurrentBudget])
+    if (month && isValidMonthFormat(month)) {
+      fetchBudgetByMonth(month)
+    } else {
+      setCurrentBudget(null)
+      setLoading(false)
+    }
+  }, [month, fetchBudgetByMonth])
 
   return {
     budgets,
@@ -153,6 +178,7 @@ export function useBudgets(): UseBudgetsReturn {
     error,
     fetchBudgets,
     fetchCurrentBudget,
+    fetchBudgetByMonth,
     addBudget,
     updateBudget,
     deleteBudget,

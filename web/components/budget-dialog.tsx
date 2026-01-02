@@ -14,7 +14,8 @@ export function BudgetDialog({
   children, 
   open, 
   onOpenChange, 
-  editingBudget 
+  editingBudget,
+  defaultMonth
 }: BudgetDialogProps) {
   const {
     formData,
@@ -28,7 +29,7 @@ export function BudgetDialog({
     addEssentialItem,
     removeEssentialItem,
     setFormDataMonth
-  } = useBudgetForm({ editingBudget, onSubmit, open: open ?? false })
+  } = useBudgetForm({ editingBudget, onSubmit, open: open ?? false, defaultMonth })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

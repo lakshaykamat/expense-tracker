@@ -1,37 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getCurrentMonth, generateAvailableMonths } from '@/utils/date.utils'
-import { Budget } from '@/types'
 import { isValidMonthFormat } from '@/utils/validation.utils'
 
 interface UseMonthSelectionOptions {
   initialMonth?: string
-  budgets?: Budget[]
-  currentBudget?: Budget | null
 }
 
 export function useMonthSelection(options: UseMonthSelectionOptions = {}) {
-  const { initialMonth, budgets = [], currentBudget } = options
+  const { initialMonth } = options
   const currentMonth = getCurrentMonth()
   const [initialized, setInitialized] = useState(false)
   
-  // Get available months from budgets (only months with budgets)
-  const availableMonths = budgets.length > 0
-    ? budgets.map(b => b.month).filter(month => isValidMonthFormat(month)).sort((a, b) => b.localeCompare(a))
-    : []
+  // Generate last 12 months
+  const availableMonths = generateAvailableMonths(12)
   
-  // Get latest month with data
-  const getLatestMonth = useCallback(() => {
+  // Get initial month
+  const getInitialMonth = useCallback(() => {
     if (initialMonth && isValidMonthFormat(initialMonth)) {
       return initialMonth
     }
-    if (availableMonths.length > 0) {
-      return availableMonths[0] // Latest month (first in sorted descending array)
-    }
-    if (currentBudget?.month && isValidMonthFormat(currentBudget.month)) {
-      return currentBudget.month
-    }
     return currentMonth
-  }, [initialMonth, availableMonths, currentBudget, currentMonth])
+  }, [initialMonth, currentMonth])
   
   const [selectedMonth, setSelectedMonth] = useState<string>('')
 
@@ -41,16 +30,16 @@ export function useMonthSelection(options: UseMonthSelectionOptions = {}) {
     }
   }, [])
 
-  // Initialize with latest month on first load only
+  // Initialize with current month on first load only
   useEffect(() => {
-    if (!initialized && (availableMonths.length > 0 || currentBudget)) {
-      const latestMonth = getLatestMonth()
-      if (latestMonth) {
-        setSelectedMonth(latestMonth)
+    if (!initialized) {
+      const initial = getInitialMonth()
+      if (initial) {
+        setSelectedMonth(initial)
         setInitialized(true)
       }
     }
-  }, [availableMonths, currentBudget, getLatestMonth, initialized])
+  }, [getInitialMonth, initialized])
 
   return {
     selectedMonth: selectedMonth || currentMonth,

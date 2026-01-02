@@ -1,24 +1,19 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import type { Budget } from '@/types'
-import { Button } from './ui/button'
 import { PageHeader } from './page-header'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import { Plus, ChevronDown, Edit, Trash2 } from 'lucide-react'
 import { Spinner } from './ui/spinner'
 import { EmptyState } from './empty-state'
+import { generateAvailableMonths } from '@/utils/date.utils'
 
 interface BudgetDisplayProps {
   budgets: Budget[]
   currentBudget: Budget | null
   loading: boolean
   error: string | null
+  selectedMonth: string
+  onMonthChange: (month: string) => void
   onAddBudget?: () => void
   onEditBudget?: (budget: Budget) => void
   onDeleteBudget?: (budgetId: string) => void
@@ -26,30 +21,8 @@ interface BudgetDisplayProps {
   onDeleteItem?: (budgetId: string, itemName: string) => void
 }
 
-export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBudget, onEditBudget, onDeleteBudget, onUpdateItem, onDeleteItem }: BudgetDisplayProps) {
-  // Get available months from budgets (only months with budgets)
-  const availableMonths = budgets.map(b => b.month).filter(month => month).sort((a, b) => b.localeCompare(a))
-  
-  // Default to latest budget month
-  const getLatestMonth = () => {
-    if (availableMonths.length > 0) {
-      return availableMonths[0]
-    }
-    if (currentBudget?.month) {
-      return currentBudget.month
-    }
-    return null
-  }
-  
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(getLatestMonth())
-
-  // Auto-select latest budget when budgets change
-  useEffect(() => {
-    const latestMonth = getLatestMonth()
-    if (latestMonth && latestMonth !== selectedMonth) {
-      setSelectedMonth(latestMonth)
-    }
-  }, [budgets, currentBudget])
+export function BudgetDisplay({ currentBudget, loading, error, selectedMonth, onMonthChange, onAddBudget, onEditBudget, onDeleteBudget, onUpdateItem, onDeleteItem }: BudgetDisplayProps) {
+  const availableMonths = generateAvailableMonths(12)
 
   if (loading) {
     return (
@@ -72,7 +45,7 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
     )
   }
 
-  const displayBudget = selectedMonth ? budgets.find(b => b.month === selectedMonth) : currentBudget
+  const displayBudget = currentBudget
 
   const formatMonth = (monthString: string) => {
     const date = new Date(monthString + '-01')
@@ -94,7 +67,7 @@ export function BudgetDisplay({ budgets, currentBudget, loading, error, onAddBud
       <PageHeader
         availableMonths={availableMonths}
         selectedMonth={selectedMonth}
-        onMonthChange={setSelectedMonth}
+        onMonthChange={onMonthChange}
         buttonText={displayBudget ? "Edit Budget" : "Add Budget"}
         onButtonClick={displayBudget ? () => onEditBudget && onEditBudget(displayBudget) : onAddBudget}
       />

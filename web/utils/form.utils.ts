@@ -25,7 +25,7 @@ export function getInitialExpenseFormData(editingExpense?: Expense | null): Crea
   }
 }
 
-export function getInitialBudgetFormData(editingBudget?: Budget | null): CreateBudgetData {
+export function getInitialBudgetFormData(editingBudget?: Budget | null, defaultMonth?: string): CreateBudgetData {
   if (editingBudget) {
     return {
       month: editingBudget.month,
@@ -34,7 +34,7 @@ export function getInitialBudgetFormData(editingBudget?: Budget | null): CreateB
   }
   
   return {
-    month: getCurrentMonth(),
+    month: defaultMonth || getCurrentMonth(),
     essentialItems: []
   }
 }

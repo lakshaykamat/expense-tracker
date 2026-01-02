@@ -9,7 +9,7 @@ interface UseBudgetHandlersOptions {
 }
 
 export function useBudgetHandlers({ budgets, dialog }: UseBudgetHandlersOptions) {
-  const { budgets: budgetsList, updateBudget, addBudget, deleteBudget, fetchBudgets } = budgets
+  const { currentBudget, updateBudget, addBudget, deleteBudget, fetchBudgetByMonth } = budgets
   const { editingBudget, closeDialog } = dialog
 
   const handleBudgetSubmit = useCallback(async (data: CreateBudgetData) => {
@@ -19,23 +19,30 @@ export function useBudgetHandlers({ budgets, dialog }: UseBudgetHandlersOptions)
 
     if (result.success) {
       closeDialog()
-      await fetchBudgets()
+      // Refetch budget for the month that was just modified
+      if (data.month) {
+        await fetchBudgetByMonth(data.month)
+      } else if (editingBudget?.month) {
+        await fetchBudgetByMonth(editingBudget.month)
+      }
     }
-  }, [editingBudget, updateBudget, addBudget, closeDialog, fetchBudgets])
+  }, [editingBudget, updateBudget, addBudget, closeDialog, fetchBudgetByMonth])
 
   const handleEditBudget = useCallback((budget: Budget) => {
     dialog.openEditDialog(budget)
   }, [dialog])
 
   const handleDeleteBudget = useCallback(async (id: string) => {
+    const budgetToDelete = currentBudget?._id === id ? currentBudget : null
+    const month = budgetToDelete?.month
     const result = await deleteBudget(id)
-    if (result.success) {
-      await fetchBudgets()
+    if (result.success && month) {
+      await fetchBudgetByMonth(month)
     }
-  }, [deleteBudget, fetchBudgets])
+  }, [currentBudget, deleteBudget, fetchBudgetByMonth])
 
   const handleUpdateItem = useCallback(async (budgetId: string, itemName: string, amount: number) => {
-    const budget = budgetsList.find(b => b._id === budgetId)
+    const budget = currentBudget?._id === budgetId ? currentBudget : null
     if (!budget) return
 
     const updatedBudget: CreateBudgetData = {
@@ -48,11 +55,13 @@ export function useBudgetHandlers({ budgets, dialog }: UseBudgetHandlersOptions)
     }
 
     await updateBudget(budgetId, updatedBudget)
-    await fetchBudgets()
-  }, [budgetsList, updateBudget, fetchBudgets])
+    if (budget.month) {
+      await fetchBudgetByMonth(budget.month)
+    }
+  }, [currentBudget, updateBudget, fetchBudgetByMonth])
 
   const handleDeleteItem = useCallback(async (budgetId: string, itemName: string) => {
-    const budget = budgetsList.find(b => b._id === budgetId)
+    const budget = currentBudget?._id === budgetId ? currentBudget : null
     if (!budget) return
 
     const updatedBudget: CreateBudgetData = {
@@ -61,8 +70,10 @@ export function useBudgetHandlers({ budgets, dialog }: UseBudgetHandlersOptions)
     }
 
     await updateBudget(budgetId, updatedBudget)
-    await fetchBudgets()
-  }, [budgetsList, updateBudget, fetchBudgets])
+    if (budget.month) {
+      await fetchBudgetByMonth(budget.month)
+    }
+  }, [currentBudget, updateBudget, fetchBudgetByMonth])
 
   return {
     handleBudgetSubmit,

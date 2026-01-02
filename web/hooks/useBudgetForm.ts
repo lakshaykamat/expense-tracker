@@ -6,21 +6,22 @@ interface UseBudgetFormOptions {
   editingBudget?: Budget | null
   onSubmit: (data: CreateBudgetData) => void
   open: boolean
+  defaultMonth?: string
 }
 
-export function useBudgetForm({ editingBudget, onSubmit, open }: UseBudgetFormOptions) {
-  const [formData, setFormData] = useState<CreateBudgetData>(getInitialBudgetFormData(editingBudget))
+export function useBudgetForm({ editingBudget, onSubmit, open, defaultMonth }: UseBudgetFormOptions) {
+  const [formData, setFormData] = useState<CreateBudgetData>(getInitialBudgetFormData(editingBudget, defaultMonth))
   const [newItemName, setNewItemName] = useState('')
   const [newItemAmount, setNewItemAmount] = useState('')
 
   useEffect(() => {
     if (open) {
-      const initialData = getInitialBudgetFormData(editingBudget)
+      const initialData = getInitialBudgetFormData(editingBudget, defaultMonth)
       setFormData(initialData)
       setNewItemName('')
       setNewItemAmount('')
     }
-  }, [editingBudget, open])
+  }, [editingBudget, open, defaultMonth])
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
