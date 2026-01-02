@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { Expense, ExpenseDocument } from './schemas/expense.schema';
-import { getMonthDateRange, normalizeDateToUTC } from '../common/utils/date.utils';
+import { getMonthDateRange, normalizeDateToUTC, getCurrentMonth } from '../common/utils/date.utils';
 import { isValidObjectId, isValidMonthFormat } from '../common/utils/validation.utils';
 import { buildUserIdQuery, toObjectId, toObjectIds, buildIdAndUserIdQuery } from '../common/utils/query.utils';
 
@@ -68,12 +68,14 @@ export class ExpensesService {
     
     const query: any = buildUserIdQuery(userId);
     
-    if (month) {
-      if (!isValidMonthFormat(month)) {
+    const monthToUse = month || getCurrentMonth();
+    
+    if (monthToUse) {
+      if (!isValidMonthFormat(monthToUse)) {
         throw new BadRequestException('Invalid month format. Expected YYYY-MM');
       }
       try {
-        const { startDate, endDate } = getMonthDateRange(month);
+        const { startDate, endDate } = getMonthDateRange(monthToUse);
         query.date = {
           $gte: startDate,
           $lt: endDate
