@@ -6,7 +6,10 @@ import { isValidMonthFormat } from '@/utils/validation.utils'
 
 export function useExpenses(month?: string): UseExpensesReturn {
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => {
+    // Start with loading true if month is provided and valid on mount
+    return !!(month && isValidMonthFormat(month))
+  })
   const [error, setError] = useState<string | null>(null)
   const availableMonths = generateAvailableMonths(12)
 

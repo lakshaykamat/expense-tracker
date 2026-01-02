@@ -9,37 +9,25 @@ interface UseMonthSelectionOptions {
 export function useMonthSelection(options: UseMonthSelectionOptions = {}) {
   const { initialMonth } = options
   const currentMonth = getCurrentMonth()
-  const [initialized, setInitialized] = useState(false)
   
   // Generate last 12 months
   const availableMonths = generateAvailableMonths(12)
   
-  // Get initial month
-  const getInitialMonth = useCallback(() => {
+  // Get initial month - initialize immediately, not in useEffect
+  const getInitialMonth = () => {
     if (initialMonth && isValidMonthFormat(initialMonth)) {
       return initialMonth
     }
     return currentMonth
-  }, [initialMonth, currentMonth])
+  }
   
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const [selectedMonth, setSelectedMonth] = useState<string>(getInitialMonth())
 
   const setSelectedMonthSafe = useCallback((month: string) => {
     if (isValidMonthFormat(month)) {
       setSelectedMonth(month)
     }
   }, [])
-
-  // Initialize with current month on first load only
-  useEffect(() => {
-    if (!initialized) {
-      const initial = getInitialMonth()
-      if (initial) {
-        setSelectedMonth(initial)
-        setInitialized(true)
-      }
-    }
-  }, [getInitialMonth, initialized])
 
   return {
     selectedMonth: selectedMonth || currentMonth,

@@ -5,7 +5,10 @@ import { isValidMonthFormat } from '@/utils/validation.utils'
 
 export function useAnalysisStats(month: string) {
   const [analysisStats, setAnalysisStats] = useState<AnalysisStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => {
+    // Start with loading true if month is valid on mount
+    return !!(month && isValidMonthFormat(month))
+  })
   const [error, setError] = useState<string | null>(null)
 
   const fetchStats = useCallback(async (monthToFetch: string) => {
@@ -35,8 +38,11 @@ export function useAnalysisStats(month: string) {
   }, [])
 
   useEffect(() => {
-    if (month) {
+    if (month && isValidMonthFormat(month)) {
       fetchStats(month)
+    } else {
+      setAnalysisStats(null)
+      setLoading(false)
     }
   }, [month, fetchStats])
 
