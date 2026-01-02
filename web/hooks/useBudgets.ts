@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { budgetsApi } from '@/lib/budgets-api'
 import type { Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, UseBudgetsReturn } from '@/types'
 import { isValidMonthFormat } from '@/utils/validation.utils'
+import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
+import { shouldUpdateCurrentBudget, updateBudgetState, removeBudgetState } from '@/helpers/budget.helpers'
 
 export function useBudgets(month?: string): UseBudgetsReturn {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [currentBudget, setCurrentBudget] = useState<Budget | null>(null)
-  const [loading, setLoading] = useState(() => {
-    // Start with loading true if month is provided and valid on mount
-    return !!(month && isValidMonthFormat(month))
-  })
+  const [loading, setLoading] = useState(() => createInitialLoadingState(month, isValidMonthFormat))
   const [error, setError] = useState<string | null>(null)
 
   const fetchBudgets = useCallback(async () => {
@@ -19,7 +18,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       const data = await budgetsApi.getAll()
       setBudgets(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch budgets')
+      setError(extractErrorMessage(err, 'Failed to fetch budgets'))
     } finally {
       setLoading(false)
     }
@@ -38,7 +37,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       const data = await budgetsApi.getByMonth(monthParam)
       setCurrentBudget(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch budget')
+      setError(extractErrorMessage(err, 'Failed to fetch budget'))
       setCurrentBudget(null)
     } finally {
       setLoading(false)
@@ -51,7 +50,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       const data = await budgetsApi.getCurrent()
       setCurrentBudget(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch current budget')
+      setError(extractErrorMessage(err, 'Failed to fetch current budget'))
     }
   }, [])
 
@@ -62,15 +61,13 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       const newBudget = await budgetsApi.create(data)
       setBudgets(prev => [newBudget, ...prev])
       
-      // Update current budget if it's for current month
-      const currentMonth = new Date().toISOString().slice(0, 7)
-      if (data.month === currentMonth) {
+      if (shouldUpdateCurrentBudget(data.month)) {
         setCurrentBudget(newBudget)
       }
       
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create budget'
+      const errorMessage = extractErrorMessage(err, 'Failed to create budget')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
@@ -80,89 +77,72 @@ export function useBudgets(month?: string): UseBudgetsReturn {
     try {
       setError(null)
       const updatedBudget = await budgetsApi.update(id, data)
-      setBudgets(prev => prev.map(budget => budget._id === id ? updatedBudget : budget))
-      
-      // Update current budget if it matches
-      if (currentBudget?._id === id) {
-        setCurrentBudget(updatedBudget)
-      }
-      
+      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, updatedBudget, currentBudget, id)
+      setBudgets(newBudgets)
+      setCurrentBudget(newCurrentBudget)
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update budget'
+      const errorMessage = extractErrorMessage(err, 'Failed to update budget')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
-  }, [currentBudget])
+  }, [budgets, currentBudget])
 
   const deleteBudget = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       await budgetsApi.delete(id)
-      setBudgets(prev => prev.filter(budget => budget._id !== id))
-      
-      // Clear current budget if it matches
-      if (currentBudget?._id === id) {
-        setCurrentBudget(null)
-      }
-      
+      const { budgets: newBudgets, currentBudget: newCurrentBudget } = removeBudgetState(budgets, currentBudget, id)
+      setBudgets(newBudgets)
+      setCurrentBudget(newCurrentBudget)
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete budget'
+      const errorMessage = extractErrorMessage(err, 'Failed to delete budget')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
-  }, [currentBudget])
+  }, [budgets, currentBudget])
 
   const addEssentialItem = useCallback(async (budgetId: string, item: EssentialItem): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       const updatedBudget = await budgetsApi.addEssentialItem(budgetId, item)
-      setBudgets(prev => prev.map(budget => budget._id === budgetId ? updatedBudget : budget))
-      
-      // Update current budget if it matches
-      if (currentBudget?._id === budgetId) {
-        setCurrentBudget(updatedBudget)
-      }
-      
+      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, updatedBudget, currentBudget, budgetId)
+      setBudgets(newBudgets)
+      setCurrentBudget(newCurrentBudget)
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add essential item'
+      const errorMessage = extractErrorMessage(err, 'Failed to add essential item')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
-  }, [currentBudget])
+  }, [budgets, currentBudget])
 
   const removeEssentialItem = useCallback(async (budgetId: string, itemName: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       await budgetsApi.removeEssentialItem(budgetId, itemName)
       
-      // Update local state by removing the item
-      setBudgets(prev => prev.map(budget => {
-        if (budget._id === budgetId) {
-          const updatedBudget = {
-            ...budget,
-            essentialItems: budget.essentialItems.filter(item => item.name !== itemName)
-          }
-          
-          // Update current budget if it matches
-          if (currentBudget?._id === budgetId) {
-            setCurrentBudget(updatedBudget)
-          }
-          
-          return updatedBudget
-        }
-        return budget
-      }))
+      const updatedBudget = budgets.find(b => b._id === budgetId)
+      if (!updatedBudget) {
+        return { success: false, error: 'Budget not found' }
+      }
       
+      const newBudget = {
+        ...updatedBudget,
+        essentialItems: updatedBudget.essentialItems.filter(item => item.name !== itemName)
+      }
+      
+      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, newBudget, currentBudget, budgetId)
+      setBudgets(newBudgets)
+      setCurrentBudget(newCurrentBudget)
       return { success: true }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to remove essential item'
+      const errorMessage = extractErrorMessage(err, 'Failed to remove essential item')
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
-  }, [currentBudget])
+  }, [budgets, currentBudget])
 
   // Fetch budget by month when month prop changes
   useEffect(() => {

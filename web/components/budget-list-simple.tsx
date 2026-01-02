@@ -2,6 +2,7 @@
 
 import type { Budget } from '@/types'
 import { Spinner } from './ui/spinner'
+import { ErrorDisplay } from './error-display'
 
 interface SimpleBudgetListProps {
   budgets: Budget[]
@@ -19,7 +20,7 @@ export function SimpleBudgetList({ budgets, loading, error }: SimpleBudgetListPr
   }
 
   if (error) {
-    return <div>Error: {error}</div>
+    return <ErrorDisplay error={error} variant="compact" />
   }
 
   if (budgets.length === 0) {

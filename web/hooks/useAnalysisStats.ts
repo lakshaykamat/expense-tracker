@@ -2,13 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { budgetsApi } from '@/lib/budgets-api'
 import { AnalysisStats } from '@/types'
 import { isValidMonthFormat } from '@/utils/validation.utils'
+import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
 
 export function useAnalysisStats(month: string) {
   const [analysisStats, setAnalysisStats] = useState<AnalysisStats | null>(null)
-  const [loading, setLoading] = useState(() => {
-    // Start with loading true if month is valid on mount
-    return !!(month && isValidMonthFormat(month))
-  })
+  const [loading, setLoading] = useState(() => createInitialLoadingState(month, isValidMonthFormat))
   const [error, setError] = useState<string | null>(null)
 
   const fetchStats = useCallback(async (monthToFetch: string) => {
@@ -29,8 +27,7 @@ export function useAnalysisStats(month: string) {
         setAnalysisStats(null)
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch analysis data'
-      setError(errorMessage)
+      setError(extractErrorMessage(err, 'Failed to fetch analysis data'))
       setAnalysisStats(null)
     } finally {
       setLoading(false)

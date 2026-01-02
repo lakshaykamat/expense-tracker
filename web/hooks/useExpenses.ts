@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Expense, CreateExpenseData, UseExpensesReturn } from '@/types'
 import { expensesApi } from '@/lib/expenses-api'
-import { getCurrentMonth, getMonthFromDate, generateAvailableMonths } from '@/utils/date.utils'
+import { getCurrentMonth, generateAvailableMonths } from '@/utils/date.utils'
 import { isValidMonthFormat } from '@/utils/validation.utils'
+import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
+import { shouldIncludeInCurrentMonth, validateExpenseData, validateExpenseId } from '@/helpers/expense.helpers'
 
 export function useExpenses(month?: string): UseExpensesReturn {
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(() => {
-    // Start with loading true if month is provided and valid on mount
-    return !!(month && isValidMonthFormat(month))
-  })
+  const [loading, setLoading] = useState(() => createInitialLoadingState(month, isValidMonthFormat))
   const [error, setError] = useState<string | null>(null)
   const availableMonths = generateAvailableMonths(12)
 
@@ -27,69 +26,57 @@ export function useExpenses(month?: string): UseExpensesReturn {
       const response = await expensesApi.getAll(monthToFetch)
       const fetchedExpenses = Array.isArray(response?.data) ? response.data : []
       setExpenses(fetchedExpenses)
-      setError(null)
     } catch (error: any) {
       setExpenses([])
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to connect to server'
-      setError(errorMessage)
+      setError(extractErrorMessage(error, 'Failed to connect to server'))
     } finally {
       setLoading(false)
     }
   }, [month])
 
   const addExpense = useCallback(async (data: CreateExpenseData) => {
+    const validation = validateExpenseData(data)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+    
     try {
-      if (!data.title || !data.title.trim()) {
-        return { success: false, error: 'Title is required' }
-      }
-      if (!data.amount || data.amount <= 0) {
-        return { success: false, error: 'Amount must be greater than 0' }
-      }
-      
       const response = await expensesApi.create(data)
       if (response?.data) {
-        const expenseMonth = getMonthFromDate(data.date || new Date())
         const currentMonth = month || getCurrentMonth()
-        if (expenseMonth === currentMonth) {
+        if (shouldIncludeInCurrentMonth(data.date, currentMonth)) {
           setExpenses(prev => [response.data, ...prev])
         }
       }
       return { success: true }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to create expense'
-      return { success: false, error: errorMessage }
+      return { success: false, error: extractErrorMessage(error, 'Failed to create expense') }
     }
   }, [month])
 
   const updateExpense = useCallback(async (id: string, data: CreateExpenseData) => {
+    if (!validateExpenseId(id)) {
+      return { success: false, error: 'Invalid expense ID' }
+    }
+    
+    const validation = validateExpenseData(data)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+    
     try {
-      if (!id || typeof id !== 'string') {
-        return { success: false, error: 'Invalid expense ID' }
-      }
-      if (!data.title || !data.title.trim()) {
-        return { success: false, error: 'Title is required' }
-      }
-      if (data.amount !== undefined && data.amount <= 0) {
-        return { success: false, error: 'Amount must be greater than 0' }
-      }
-      
       const response = await expensesApi.update(id, data)
       if (response?.data) {
-        setExpenses(prev => 
-          prev.map(expense => 
-            expense._id === id ? response.data : expense
-          )
-        )
+        setExpenses(prev => prev.map(expense => expense._id === id ? response.data : expense))
       }
       return { success: true }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update expense'
-      return { success: false, error: errorMessage }
+      return { success: false, error: extractErrorMessage(error, 'Failed to update expense') }
     }
   }, [])
 
   const deleteExpense = useCallback(async (id: string) => {
-    if (!id || typeof id !== 'string') {
+    if (!validateExpenseId(id)) {
       return { success: false, error: 'Invalid expense ID' }
     }
     
@@ -101,8 +88,7 @@ export function useExpenses(month?: string): UseExpensesReturn {
       return { success: true }
     } catch (error: any) {
       setExpenses(originalExpenses)
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete expense'
-      return { success: false, error: errorMessage }
+      return { success: false, error: extractErrorMessage(error, 'Failed to delete expense') }
     }
   }, [expenses])
 

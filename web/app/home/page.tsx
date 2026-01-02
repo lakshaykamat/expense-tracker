@@ -7,8 +7,8 @@ import { PageLayout } from '@/components/page-layout'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useExpenseDialog } from '@/hooks/useExpenseDialog'
 import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
+import { useMonthSelection } from '@/hooks/useMonthSelection'
 import { Spinner } from '@/components/ui/spinner'
-import { getCurrentMonth } from '@/utils/date.utils'
 
 // Lazy load dialog component (only loads when needed)
 const ExpenseDialog = lazy(() => import('@/components/expense-dialog').then(module => ({ default: module.ExpenseDialog })))
@@ -16,9 +16,9 @@ const ExpenseDialog = lazy(() => import('@/components/expense-dialog').then(modu
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const [selectedMonth, setSelectedMonth] = React.useState<string>(getCurrentMonth())
+  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
   const expensesHook = useExpenses(selectedMonth)
-  const { expenses, loading, error, fetchExpenses, availableMonths } = expensesHook
+  const { expenses, loading, error, fetchExpenses } = expensesHook
   
   const dialogHook = useExpenseDialog()
   const { isDialogOpen, editingExpense, openAddDialog, openEditDialog, setIsDialogOpen } = dialogHook

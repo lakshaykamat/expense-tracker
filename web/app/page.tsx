@@ -9,7 +9,13 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    router.push('/home')
+    try {
+      router.push('/home')
+    } catch (error) {
+      // Fallback if router fails
+      console.error('Navigation error:', error)
+      window.location.href = '/home'
+    }
   }, [router])
 
   return (

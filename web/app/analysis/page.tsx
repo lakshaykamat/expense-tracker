@@ -8,6 +8,7 @@ import { useBudgets } from '@/hooks/useBudgets'
 import { useAnalysisStats } from '@/hooks/useAnalysisStats'
 import { useMonthSelection } from '@/hooks/useMonthSelection'
 import { Spinner } from '@/components/ui/spinner'
+import { ErrorDisplay } from '@/components/error-display'
 import { formatCurrency } from '@/utils/currency.utils'
 import { getProgressColor } from '@/utils/analysis.utils'
 import { EmptyState } from '@/components/empty-state'
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default function AnalysisPage() {
   const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
-  const { analysisStats, loading: statsLoading } = useAnalysisStats(selectedMonth)
+  const { analysisStats, loading: statsLoading, error } = useAnalysisStats(selectedMonth)
 
   const loading = statsLoading
 
@@ -25,6 +26,28 @@ export default function AnalysisPage() {
       <PageLayout>
         <div className="flex items-center justify-center w-full" style={{ minHeight: 'calc(100vh - 8rem)' }}>
           <Spinner size="lg" />
+        </div>
+      </PageLayout>
+    )
+  }
+
+  // Handle errors gracefully
+  if (error) {
+    return (
+      <PageLayout>
+        <div className="space-y-8">
+          <PageHeader
+            availableMonths={availableMonths}
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            showButton={false}
+          />
+          <ErrorDisplay
+            error={error}
+            title="Failed to load analysis data"
+            onRetry={() => window.location.reload()}
+            variant="default"
+          />
         </div>
       </PageLayout>
     )

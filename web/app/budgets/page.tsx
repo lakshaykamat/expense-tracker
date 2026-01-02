@@ -1,14 +1,14 @@
 "use client";
 
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useBudgetDialog } from "@/hooks/useBudgetDialog";
 import { useBudgetHandlers } from "@/hooks/useBudgetHandlers";
+import { useMonthSelection } from "@/hooks/useMonthSelection";
 import { BudgetDisplay } from '@/components/budget-display'
 import { PageLayout } from '@/components/page-layout'
 import { BudgetFab } from '@/components/budget-fab'
 import { Plus } from "lucide-react";
-import { getCurrentMonth } from '@/utils/date.utils';
 
 // Lazy load dialog component (only loads when needed)
 const BudgetDialog = lazy(() => import('@/components/budget-dialog').then(module => ({ default: module.BudgetDialog })))
@@ -16,7 +16,7 @@ const BudgetDialog = lazy(() => import('@/components/budget-dialog').then(module
 export const dynamic = "force-dynamic";
 
 export default function BudgetsPage() {
-  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth())
+  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
   const budgetsHook = useBudgets(selectedMonth);
   const {
     currentBudget,
@@ -53,6 +53,7 @@ export default function BudgetsPage() {
         error={error}
         selectedMonth={selectedMonth}
         onMonthChange={setSelectedMonth}
+        availableMonths={availableMonths}
         onAddBudget={() => openAddDialog()}
         onEditBudget={handleEditBudget}
         onDeleteBudget={handleDeleteBudget}

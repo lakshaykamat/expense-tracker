@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CreateExpenseData, Expense } from '@/types'
-import { getInitialExpenseFormData, validateExpenseForm } from '@/utils/form.utils'
+import { getInitialExpenseFormData } from '@/utils/form.utils'
+import { validateExpenseData } from '@/helpers/expense.helpers'
 
 interface UseExpenseFormOptions {
   editingExpense?: Expense | null
@@ -21,8 +22,8 @@ export function useExpenseForm({ editingExpense, onSubmit, onClose }: UseExpense
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     
-    const validation = validateExpenseForm(formData)
-    if (!validation.isValid) {
+    const validation = validateExpenseData(formData)
+    if (!validation.valid) {
       return
     }
     

@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { Spinner } from './ui/spinner'
 import { formatCurrency } from '@/utils/currency.utils'
 import { EmptyState } from './empty-state'
+import { ErrorDisplay } from './error-display'
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -53,22 +54,11 @@ export function ExpenseList({
           buttonText="Add Expense"
           onButtonClick={onAddExpense}
         />
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-3">
-              <span className="text-red-600 text-lg">!</span>
-            </div>
-            <div className="text-gray-600 mb-4">Something went wrong</div>
-            {onRetry && (
-              <button
-                onClick={onRetry}
-                className="text-blue-600 hover:text-blue-700 underline"
-              >
-                Try again
-              </button>
-            )}
-          </div>
-        </div>
+        <ErrorDisplay
+          error={error}
+          onRetry={onRetry}
+          variant="default"
+        />
       </div>
     )
   }

@@ -6,6 +6,7 @@ import { PageLayout } from '@/components/page-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { ErrorDisplay } from '@/components/error-display'
 import { useUser } from '@/hooks/useUser'
 import { AuthService } from '@/lib/auth-service'
 import { usersApi } from '@/lib/users-api'
@@ -64,8 +65,12 @@ export default function ProfilePage() {
       <PageLayout>
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive mb-4">{error || 'Failed to load user data'}</p>
+            <ErrorDisplay
+              error={error || 'Failed to load user data'}
+              title="Unable to load profile"
+              variant="compact"
+            />
+            <div className="mt-4 flex justify-center">
               <Button onClick={handleLogout} variant="outline">
                 Go to Login
               </Button>

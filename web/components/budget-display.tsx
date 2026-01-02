@@ -5,7 +5,9 @@ import type { Budget } from '@/types'
 import { PageHeader } from './page-header'
 import { Spinner } from './ui/spinner'
 import { EmptyState } from './empty-state'
-import { generateAvailableMonths } from '@/utils/date.utils'
+import { ErrorDisplay } from './error-display'
+import { formatMonthDisplay } from '@/utils/date.utils'
+import { formatCurrency } from '@/utils/currency.utils'
 
 interface BudgetDisplayProps {
   budgets: Budget[]
@@ -14,6 +16,7 @@ interface BudgetDisplayProps {
   error: string | null
   selectedMonth: string
   onMonthChange: (month: string) => void
+  availableMonths: string[]
   onAddBudget?: () => void
   onEditBudget?: (budget: Budget) => void
   onDeleteBudget?: (budgetId: string) => void
@@ -21,8 +24,7 @@ interface BudgetDisplayProps {
   onDeleteItem?: (budgetId: string, itemName: string) => void
 }
 
-export function BudgetDisplay({ currentBudget, loading, error, selectedMonth, onMonthChange, onAddBudget, onEditBudget, onDeleteBudget, onUpdateItem, onDeleteItem }: BudgetDisplayProps) {
-  const availableMonths = generateAvailableMonths(12)
+export function BudgetDisplay({ currentBudget, loading, error, selectedMonth, onMonthChange, availableMonths, onAddBudget, onEditBudget, onDeleteBudget, onUpdateItem, onDeleteItem }: BudgetDisplayProps) {
 
   if (loading) {
     return (
@@ -34,32 +36,25 @@ export function BudgetDisplay({ currentBudget, loading, error, selectedMonth, on
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-3">
-            <span className="text-red-600 text-lg">!</span>
-          </div>
-          <div className="text-gray-600">Something went wrong</div>
-        </div>
+      <div className="space-y-8">
+        <PageHeader
+          availableMonths={availableMonths}
+          selectedMonth={selectedMonth}
+          onMonthChange={onMonthChange}
+          buttonText="Add Budget"
+          onButtonClick={onAddBudget}
+        />
+        <ErrorDisplay
+          error={error}
+          title="Failed to load budget data"
+          onRetry={() => window.location.reload()}
+          variant="default"
+        />
       </div>
     )
   }
 
   const displayBudget = currentBudget
-
-  const formatMonth = (monthString: string) => {
-    const date = new Date(monthString + '-01')
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
 
   return (
     <div className="space-y-8">
@@ -118,9 +113,9 @@ export function BudgetDisplay({ currentBudget, loading, error, selectedMonth, on
         </div>
       ) : (
         <EmptyState
-          title={selectedMonth ? `No budget for ${formatMonth(selectedMonth)}` : "No budget found"}
+          title={selectedMonth ? `No budget for ${formatMonthDisplay(selectedMonth)}` : "No budget found"}
           description={selectedMonth 
-            ? `Create a budget for ${formatMonth(selectedMonth)} to get started`
+            ? `Create a budget for ${formatMonthDisplay(selectedMonth)} to get started`
             : 'Create your first budget to start tracking your expenses'
           }
           icon={

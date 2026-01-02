@@ -39,17 +39,6 @@ export function getInitialBudgetFormData(editingBudget?: Budget | null, defaultM
   }
 }
 
-export function validateExpenseForm(data: CreateExpenseData): { isValid: boolean; error?: string } {
-  if (!data.title || !data.title.trim()) {
-    return { isValid: false, error: 'Title is required' }
-  }
-  
-  if (!data.amount || data.amount <= 0) {
-    return { isValid: false, error: 'Amount must be greater than 0' }
-  }
-  
-  return { isValid: true }
-}
 
 export function calculateBudgetTotal(essentialItems: EssentialItem[]): number {
   return essentialItems.reduce((sum, item) => sum + (item.amount || 0), 0)

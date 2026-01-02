@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ErrorDisplay } from '@/components/error-display'
 import { MoreHorizontal, Edit, Trash2, Calendar, DollarSign } from 'lucide-react'
 import {
   DropdownMenu,
@@ -49,18 +50,13 @@ export function BudgetList({ budgets, onDelete, onEdit, isLoading, error, onRetr
 
   if (error) {
     return (
-      <Card className="text-center p-8">
-        <div className="space-y-4">
-          <div className="text-destructive">
-            <p className="font-medium">Error loading budgets</p>
-            <p className="text-sm text-muted-foreground mt-1">{error}</p>
-          </div>
-          {onRetry && (
-            <Button onClick={onRetry} variant="outline">
-              Try Again
-            </Button>
-          )}
-        </div>
+      <Card className="p-8">
+        <ErrorDisplay
+          error={error}
+          title="Error loading budgets"
+          onRetry={onRetry}
+          variant="compact"
+        />
       </Card>
     )
   }
