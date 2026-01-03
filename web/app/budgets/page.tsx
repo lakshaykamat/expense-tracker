@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useBudgetDialog } from "@/hooks/useBudgetDialog";
 import { useBudgetHandlers } from "@/hooks/useBudgetHandlers";
@@ -43,6 +43,14 @@ export default function BudgetsPage() {
     dialog: dialogHook
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleBudgetSubmitWithLoading = async (data: any) => {
+    setIsSubmitting(true)
+    await handleBudgetSubmit(data)
+    setIsSubmitting(false)
+  }
+
   return (
     <PageLayout>
       {/* Budget Display */}
@@ -66,9 +74,10 @@ export default function BudgetsPage() {
         <BudgetDialog
           open={isDialogOpen}
           onOpenChange={closeDialog}
-          onSubmit={handleBudgetSubmit}
+          onSubmit={handleBudgetSubmitWithLoading}
           editingBudget={editingBudget || undefined}
           defaultMonth={selectedMonth}
+          isLoading={isSubmitting}
         />
       </Suspense>
       

@@ -19,8 +19,9 @@ import { Plus } from 'lucide-react'
 import { CategoryInput } from './category-input'
 import { useCategories } from '@/hooks/useCategories'
 import { useExpenseForm } from '@/hooks/useExpenseForm'
+import { Spinner } from './ui/spinner'
 
-export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpenChange, editingExpense }: ExpenseDialogProps) {
+export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpenChange, editingExpense, isLoading = false }: ExpenseDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onOpenChange || setInternalOpen
@@ -164,9 +165,17 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
           <DialogFooter className="px-6 pb-4 sm:pb-6 pt-4 border-t border-border/10 flex-shrink-0 bg-background">
             <Button 
               type="submit" 
-              className="w-full h-11 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              disabled={isLoading}
+              className="w-full h-11 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {editingExpense ? 'Update Expense' : 'Add Expense'}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span>{editingExpense ? 'Updating...' : 'Adding...'}</span>
+                </div>
+              ) : (
+                editingExpense ? 'Update Expense' : 'Add Expense'
+              )}
             </Button>
           </DialogFooter>
         </form>

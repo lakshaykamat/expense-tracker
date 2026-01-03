@@ -8,6 +8,7 @@ import { Plus, X, Calendar } from 'lucide-react'
 import type { BudgetDialogProps } from '@/types'
 import { useBudgetForm } from '@/hooks/useBudgetForm'
 import { formatCurrency } from '@/utils/currency.utils'
+import { Spinner } from './ui/spinner'
 
 export function BudgetDialog({ 
   onSubmit, 
@@ -15,7 +16,8 @@ export function BudgetDialog({
   open, 
   onOpenChange, 
   editingBudget,
-  defaultMonth
+  defaultMonth,
+  isLoading = false
 }: BudgetDialogProps) {
   const {
     formData,
@@ -154,10 +156,17 @@ export function BudgetDialog({
           <DialogFooter className="px-4 md:px-6 pb-4 md:pb-6 pt-4 border-t border-border/10 shrink-0 bg-background">
             <Button 
               type="submit" 
-              disabled={isSubmitDisabled}
+              disabled={isSubmitDisabled || isLoading}
               className="w-full h-10 md:h-11 text-sm md:text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {editingBudget ? 'Update Budget' : 'Create Budget'}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span>{editingBudget ? 'Updating...' : 'Creating...'}</span>
+                </div>
+              ) : (
+                editingBudget ? 'Update Budget' : 'Create Budget'
+              )}
             </Button>
           </DialogFooter>
         </form>

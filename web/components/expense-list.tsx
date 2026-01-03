@@ -13,7 +13,7 @@ import { ErrorDisplay } from './error-display'
 
 interface ExpenseListProps {
   expenses: Expense[]
-  onDelete: (id: string) => void
+  onDelete: (expense: Expense) => void
   onEdit: (expense: Expense) => void
   onAddExpense?: () => void
   onRetry?: () => void
@@ -133,7 +133,7 @@ export function ExpenseList({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(expense._id)}
+                    onClick={() => onDelete(expense)}
                     className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                     aria-label="Delete expense"
                   >

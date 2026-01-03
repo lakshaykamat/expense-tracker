@@ -102,6 +102,7 @@ export interface ExpenseDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   editingExpense?: Expense | null
+  isLoading?: boolean
 }
 
 export interface ExpenseListProps {
@@ -138,6 +139,7 @@ export interface BudgetDialogProps {
   onOpenChange?: (open: boolean) => void
   editingBudget?: Budget | null
   defaultMonth?: string
+  isLoading?: boolean
 }
 
 export interface BudgetListProps {

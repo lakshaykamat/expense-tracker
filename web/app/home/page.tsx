@@ -1,6 +1,6 @@
 'use client'
 
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense, useState } from 'react'
 import { ExpenseList } from '@/components/expense-list'
 import { FabButton } from '@/components/fab-button'
 import { PageLayout } from '@/components/page-layout'
@@ -9,6 +9,8 @@ import { useExpenseDialog } from '@/hooks/useExpenseDialog'
 import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
 import { useMonthSelection } from '@/hooks/useMonthSelection'
 import { Spinner } from '@/components/ui/spinner'
+import { DeleteExpenseDialog } from '@/components/delete-expense-dialog'
+import type { Expense } from '@/types'
 
 // Lazy load dialog component (only loads when needed)
 const ExpenseDialog = lazy(() => import('@/components/expense-dialog').then(module => ({ default: module.ExpenseDialog })))
@@ -23,11 +25,50 @@ export default function HomePage() {
   const dialogHook = useExpenseDialog()
   const { isDialogOpen, editingExpense, openAddDialog, openEditDialog, setIsDialogOpen } = dialogHook
   
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
   const { handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useExpenseHandlers({
     expenses: expensesHook,
     dialog: dialogHook,
     selectedMonth: selectedMonth
   })
+
+  const handleAddExpenseWithLoading = async (data: any) => {
+    setIsSubmitting(true)
+    await handleAddExpense(data)
+    setIsSubmitting(false)
+  }
+
+  const handleUpdateExpenseWithLoading = async (data: any) => {
+    setIsSubmitting(true)
+    await handleUpdateExpense(data)
+    setIsSubmitting(false)
+  }
+
+  const handleDeleteClick = (expense: Expense) => {
+    setExpenseToDelete(expense)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!expenseToDelete || isDeleting) return
+    
+    setIsDeleting(true)
+    await handleDeleteExpense(expenseToDelete._id)
+    setIsDeleting(false)
+    setDeleteDialogOpen(false)
+    setExpenseToDelete(null)
+  }
+
+  const handleDeleteDialogClose = (open: boolean) => {
+    if (!open && !isDeleting) {
+      setDeleteDialogOpen(false)
+      setExpenseToDelete(null)
+    }
+  }
 
   if (loading && expenses.length === 0) {
     return (
@@ -43,7 +84,7 @@ export default function HomePage() {
     <PageLayout>
       <ExpenseList
         expenses={expenses}
-        onDelete={handleDeleteExpense}
+        onDelete={handleDeleteClick}
         onEdit={openEditDialog}
         onAddExpense={openAddDialog}
         isLoading={loading}
@@ -58,21 +99,33 @@ export default function HomePage() {
 
       <Suspense fallback={null}>
         <ExpenseDialog
-          onSubmit={handleAddExpense}
+          onSubmit={handleAddExpenseWithLoading}
           open={isDialogOpen && !editingExpense}
           onOpenChange={setIsDialogOpen}
+          isLoading={isSubmitting}
         />
       </Suspense>
 
       {editingExpense && (
         <Suspense fallback={null}>
           <ExpenseDialog
-            onSubmit={handleUpdateExpense}
+            onSubmit={handleUpdateExpenseWithLoading}
             open={isDialogOpen && !!editingExpense}
             onOpenChange={setIsDialogOpen}
             editingExpense={editingExpense}
+            isLoading={isSubmitting}
           />
         </Suspense>
+      )}
+
+      {expenseToDelete && (
+        <DeleteExpenseDialog
+          open={deleteDialogOpen}
+          onOpenChange={handleDeleteDialogClose}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
+          expenseTitle={expenseToDelete.title}
+        />
       )}
     </PageLayout>
   )
