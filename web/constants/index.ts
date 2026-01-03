@@ -11,10 +11,12 @@ export const DATE_FORMATS = {
 // Categories
 export const EXPENSE_CATEGORIES = [
 'Food',
+'Fast Food',
 'Health & Fitness',
 'Housing',
 'Transportation',
 'Financial',
+'Family',
 'Personal Care',
 'Electronics',
 'Clothing',
