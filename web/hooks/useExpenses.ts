@@ -3,7 +3,7 @@ import { Expense, CreateExpenseData, UseExpensesReturn } from '@/types'
 import { expensesApi } from '@/lib/expenses-api'
 import { getCurrentMonth, generateAvailableMonths } from '@/utils/date.utils'
 import { isValidMonthFormat } from '@/utils/validation.utils'
-import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
+import { extractErrorMessage, createInitialLoadingState, retryWithBackoff } from '@/helpers/api.helpers'
 import { shouldIncludeInCurrentMonth, validateExpenseData, validateExpenseId } from '@/helpers/expense.helpers'
 
 export function useExpenses(month?: string): UseExpensesReturn {
@@ -23,7 +23,7 @@ export function useExpenses(month?: string): UseExpensesReturn {
     setLoading(true)
     setError(null)
     try {
-      const response = await expensesApi.getAll(monthToFetch)
+      const response = await retryWithBackoff(() => expensesApi.getAll(monthToFetch))
       const fetchedExpenses = Array.isArray(response?.data) ? response.data : []
       setExpenses(fetchedExpenses)
     } catch (error: any) {

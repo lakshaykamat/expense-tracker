@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { budgetsApi } from '@/lib/budgets-api'
 import { AnalysisStats } from '@/types'
 import { isValidMonthFormat } from '@/utils/validation.utils'
-import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
+import { extractErrorMessage, createInitialLoadingState, retryWithBackoff } from '@/helpers/api.helpers'
 
 export function useAnalysisStats(month: string) {
   const [analysisStats, setAnalysisStats] = useState<AnalysisStats | null>(null)
@@ -20,7 +20,7 @@ export function useAnalysisStats(month: string) {
     setLoading(true)
     setError(null)
     try {
-      const stats = await budgetsApi.getAnalysisStats(monthToFetch)
+      const stats = await retryWithBackoff(() => budgetsApi.getAnalysisStats(monthToFetch))
       if (stats && typeof stats === 'object') {
         setAnalysisStats(stats)
       } else {

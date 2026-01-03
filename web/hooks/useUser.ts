@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AuthService } from '@/lib/auth-service'
 import { User } from '@/types'
+import { retryWithBackoff } from '@/helpers/api.helpers'
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
@@ -11,7 +12,7 @@ export function useUser() {
     try {
       setLoading(true)
       setError(null)
-      const response = await AuthService.getCurrentUser()
+      const response = await retryWithBackoff(() => AuthService.getCurrentUser())
       if (response?.data) {
         setUser(response.data)
       }

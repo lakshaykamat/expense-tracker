@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { budgetsApi } from '@/lib/budgets-api'
 import type { Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, UseBudgetsReturn } from '@/types'
 import { isValidMonthFormat } from '@/utils/validation.utils'
-import { extractErrorMessage, createInitialLoadingState } from '@/helpers/api.helpers'
+import { extractErrorMessage, createInitialLoadingState, retryWithBackoff } from '@/helpers/api.helpers'
 import { shouldUpdateCurrentBudget, updateBudgetState, removeBudgetState } from '@/helpers/budget.helpers'
 
 export function useBudgets(month?: string): UseBudgetsReturn {
@@ -15,7 +15,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
     try {
       setLoading(true)
       setError(null)
-      const data = await budgetsApi.getAll()
+      const data = await retryWithBackoff(() => budgetsApi.getAll())
       setBudgets(data)
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to fetch budgets'))
@@ -34,7 +34,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
     try {
       setLoading(true)
       setError(null)
-      const data = await budgetsApi.getByMonth(monthParam)
+      const data = await retryWithBackoff(() => budgetsApi.getByMonth(monthParam))
       setCurrentBudget(data)
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to fetch budget'))
@@ -47,7 +47,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
   const fetchCurrentBudget = useCallback(async () => {
     try {
       setError(null)
-      const data = await budgetsApi.getCurrent()
+      const data = await retryWithBackoff(() => budgetsApi.getCurrent())
       setCurrentBudget(data)
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to fetch current budget'))
