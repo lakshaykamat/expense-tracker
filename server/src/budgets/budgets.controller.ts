@@ -1,10 +1,10 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
   UseGuards,
   Request,
@@ -12,7 +12,7 @@ import {
   HttpStatus,
   Query,
   BadRequestException,
-  Res
+  Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { BudgetsService } from './budgets.service';
@@ -61,7 +61,11 @@ export class BudgetsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto, @Request() req) {
+  update(
+    @Param('id') id: string,
+    @Body() updateBudgetDto: UpdateBudgetDto,
+    @Request() req,
+  ) {
     return this.budgetsService.update(id, updateBudgetDto, req.user.userId);
   }
 
@@ -73,19 +77,23 @@ export class BudgetsController {
 
   @Post(':id/essential-items')
   addEssentialItem(
-    @Param('id') id: string, 
-    @Body() essentialItem: EssentialItem, 
-    @Request() req
+    @Param('id') id: string,
+    @Body() essentialItem: EssentialItem,
+    @Request() req,
   ) {
-    return this.budgetsService.addEssentialItem(id, essentialItem, req.user.userId);
+    return this.budgetsService.addEssentialItem(
+      id,
+      essentialItem,
+      req.user.userId,
+    );
   }
 
   @Delete(':id/essential-items')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeEssentialItem(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body('name') name: string,
-    @Request() req
+    @Request() req,
   ) {
     return this.budgetsService.removeEssentialItem(id, name, req.user.userId);
   }
