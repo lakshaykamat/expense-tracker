@@ -33,7 +33,11 @@ export class UsersService {
   }
 
   async exportDataToCSV(user: any): Promise<{ csv: string; filename: string }> {
-    const userId = user.userId || user._id?.toString();
+    const userId = user.userId || (user._id ? user._id.toString() : null);
+    
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
     
     const [expenses, budgets] = await Promise.all([
       this.expensesService.findAllForExport(userId),

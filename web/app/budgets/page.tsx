@@ -5,51 +5,48 @@ import { useBudgets } from "@/hooks/useBudgets";
 import { useBudgetDialog } from "@/hooks/useBudgetDialog";
 import { useBudgetHandlers } from "@/hooks/useBudgetHandlers";
 import { useMonthSelection } from "@/hooks/useMonthSelection";
-import { BudgetDisplay } from '@/components/budget-display'
-import { PageLayout } from '@/components/page-layout'
-import { BudgetFab } from '@/components/budget-fab'
+import { BudgetDisplay } from "@/components/budget-display";
+import { PageLayout } from "@/components/page-layout";
+import { BudgetFab } from "@/components/budget-fab";
 import { Plus } from "lucide-react";
 
 // Lazy load dialog component (only loads when needed)
-const BudgetDialog = lazy(() => import('@/components/budget-dialog').then(module => ({ default: module.BudgetDialog })))
+const BudgetDialog = lazy(() =>
+  import("@/components/budget-dialog").then((module) => ({
+    default: module.BudgetDialog,
+  }))
+);
 
 export const dynamic = "force-dynamic";
 
 export default function BudgetsPage() {
-  const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
+  const { selectedMonth, setSelectedMonth, availableMonths } =
+    useMonthSelection();
   const budgetsHook = useBudgets(selectedMonth);
-  const {
-    currentBudget,
-    loading,
-    error,
-  } = budgetsHook;
+  const { currentBudget, loading, error } = budgetsHook;
 
   const dialogHook = useBudgetDialog();
-  const {
-    isDialogOpen,
-    editingBudget,
-    openAddDialog,
-    closeDialog,
-  } = dialogHook;
+  const { isDialogOpen, editingBudget, openAddDialog, closeDialog } =
+    dialogHook;
 
   const {
     handleBudgetSubmit,
     handleEditBudget,
     handleDeleteBudget,
     handleUpdateItem,
-    handleDeleteItem
+    handleDeleteItem,
   } = useBudgetHandlers({
     budgets: budgetsHook,
-    dialog: dialogHook
+    dialog: dialogHook,
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleBudgetSubmitWithLoading = async (data: any) => {
-    setIsSubmitting(true)
-    await handleBudgetSubmit(data)
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(true);
+    await handleBudgetSubmit(data);
+    setIsSubmitting(false);
+  };
 
   return (
     <PageLayout>
@@ -80,7 +77,7 @@ export default function BudgetsPage() {
           isLoading={isSubmitting}
         />
       </Suspense>
-      
+
       {/* Floating Action Button - Mobile Only */}
       <BudgetFab onClick={() => openAddDialog()}>
         <Plus className="w-6 h-6" />

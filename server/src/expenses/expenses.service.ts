@@ -210,15 +210,93 @@ export class ExpensesService {
       return new Map();
     }
 
-    const results = await Promise.all(
-      months.map(async (month) => ({
-        month,
-        total: await this.getTotalExpensesForMonth(userId, month),
-      })),
-    );
+    if (!isValidObjectId(userId)) {
+      return new Map();
+    }
 
-    // Direct Map construction from array is more efficient than forEach
-    return new Map(results.map(({ month, total }) => [month, total]));
+    // Validate all months
+    const validMonths = months.filter((month) => isValidMonthFormat(month));
+    if (validMonths.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const userIdQuery = buildUserIdQuery(userId);
+
+      // Build date ranges for all months
+      const monthRanges = validMonths
+        .map((month) => {
+          try {
+            const range = getMonthDateRange(month);
+            return {
+              month,
+              startDate: range.startDate,
+              endDate: range.endDate,
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter(
+          (range): range is { month: string; startDate: Date; endDate: Date } =>
+            range !== null,
+        );
+
+      if (monthRanges.length === 0) {
+        return new Map();
+      }
+
+      // Single aggregation query: group by month using $dateToString
+      const result = await this.expenseModel.aggregate([
+        {
+          $match: {
+            ...userIdQuery,
+            $or: monthRanges.map((range) => ({
+              date: {
+                $gte: range.startDate,
+                $lt: range.endDate,
+              },
+            })),
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: '$date',
+                timezone: 'UTC',
+              },
+            },
+            total: { $sum: '$amount' },
+          },
+        },
+      ]);
+
+      // Build map from results
+      const totalsMap = new Map<string, number>();
+      const resultMap = new Map<string, number>();
+      result.forEach((item) => {
+        resultMap.set(item._id, Number(item.total) || 0);
+      });
+
+      // Ensure all valid months are in the result (set to 0 if not found)
+      validMonths.forEach((month) => {
+        totalsMap.set(month, resultMap.get(month) || 0);
+      });
+
+      return totalsMap;
+    } catch (error) {
+      console.error(
+        'Error calculating total expenses for months:',
+        months,
+        'userId:',
+        userId,
+        error,
+      );
+      // Return empty map on error
+      return new Map();
+    }
   }
 
   async getDailySpending(
