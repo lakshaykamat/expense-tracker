@@ -336,13 +336,11 @@ export class BudgetsService {
     const budgetQuery = { ...userIdQuery, month };
 
     // Parallelize all independent database queries
-    const [budgetDoc, totalExpenses, categoryBreakdown, dailySpending] =
-      await Promise.all([
-        this.budgetModel.findOne(budgetQuery).lean(),
-        this.calculateSpentAmount(userId, month),
-        this.expensesService.getCategoryBreakdown(userId, month),
-        this.expensesService.getDailySpending(userId, month),
-      ]);
+    const [budgetDoc, totalExpenses, categoryBreakdown] = await Promise.all([
+      this.budgetModel.findOne(budgetQuery).lean(),
+      this.calculateSpentAmount(userId, month),
+      this.expensesService.getCategoryBreakdown(userId, month),
+    ]);
 
     // Calculate days in month (simple calculation, no database call)
     const [year, monthNum] = month.split('-');
@@ -366,8 +364,6 @@ export class BudgetsService {
         remainingBudget: 0,
         budgetUsedPercentage: 0,
         budgetExists: false,
-        categoryBreakdown,
-        dailySpending,
         dailyAverageSpend,
         topCategories,
       };
@@ -391,8 +387,6 @@ export class BudgetsService {
       remainingBudget,
       budgetUsedPercentage,
       budgetExists: true,
-      categoryBreakdown,
-      dailySpending,
       dailyAverageSpend,
       topCategories,
     };
