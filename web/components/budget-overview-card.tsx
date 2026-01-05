@@ -21,13 +21,13 @@ export function BudgetOverviewCard({
   return (
     <Card>
       <CardContent>
-        <div className="space-y-8">
-          <div className="text-center">
-            <span className="text-xl font-bold text-foreground">
+        <div>
+          <div className="text-center mt-4 mb-4">
+            <span className="text-lg font-bold text-foreground">
               {budgetUsedPercentage.toFixed(1)}%
             </span>
           </div>
-          <div className="relative">
+          <div className="relative mb-6">
             <Progress
               value={Math.min(budgetUsedPercentage, 100)}
               className="h-2 [&>div]:bg-transparent"
@@ -39,19 +39,17 @@ export function BudgetOverviewCard({
               style={{ width: `${Math.min(budgetUsedPercentage, 100)}%` }}
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 text-center">
             <div className="bg-[oklch(0.88_0.12_45)]/15 rounded-lg p-3 border border-[oklch(0.75_0.12_45)]/25">
-              <div className="text-lg font-semibold text-foreground">
+              <div className="text-md font-semibold text-foreground">
                 {formatCurrency(totalExpenses)}
               </div>
               <div className="text-xs text-muted-foreground">Spent</div>
             </div>
             <div className="bg-[oklch(0.88_0.12_165)]/15 rounded-lg p-3 border border-[oklch(0.75_0.12_165)]/25">
               <div
-                className={`text-lg font-semibold ${
-                  remainingBudget >= 0
-                    ? "text-foreground"
-                    : "text-destructive"
+                className={`text-md font-semibold ${
+                  remainingBudget >= 0 ? "text-foreground" : "text-destructive"
                 }`}
               >
                 {formatCurrency(Math.abs(remainingBudget))}
@@ -61,12 +59,10 @@ export function BudgetOverviewCard({
               </div>
             </div>
             <div className="bg-[oklch(0.88_0.12_300)]/15 rounded-lg p-3 border border-[oklch(0.75_0.12_300)]/25">
-              <div className="text-lg font-semibold text-foreground">
+              <div className="text-md font-semibold text-foreground">
                 {formatCurrency(dailyAverageSpend)}
               </div>
-              <div className="text-xs text-muted-foreground">
-                Daily Average
-              </div>
+              <div className="text-xs text-muted-foreground">Daily Average</div>
             </div>
           </div>
         </div>
@@ -74,4 +70,3 @@ export function BudgetOverviewCard({
     </Card>
   );
 }
-
