@@ -247,8 +247,6 @@ export interface AnalysisStats {
   remainingBudget: number;
   budgetUsedPercentage: number;
   budgetExists: boolean;
-  categoryBreakdown: CategoryBreakdown[];
-  dailySpending: DailySpending[];
   dailyAverageSpend: number;
   topCategories: CategoryBreakdown[];
 }

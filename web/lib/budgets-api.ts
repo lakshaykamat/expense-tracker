@@ -103,8 +103,6 @@ export const budgetsApi = {
         remainingBudget: 0,
         budgetUsedPercentage: 0,
         budgetExists: false,
-        categoryBreakdown: [],
-        dailySpending: [],
         dailyAverageSpend: 0,
         topCategories: [],
       };
