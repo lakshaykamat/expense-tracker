@@ -23,6 +23,8 @@ export default function AnalysisPage() {
     analysisStats,
     loading: statsLoading,
     error: statsError,
+    dailyAverageSpend,
+    topCategories,
   } = useAnalysisStats(selectedMonth);
 
   const loading = statsLoading;
@@ -111,11 +113,11 @@ export default function AnalysisPage() {
           showButton={false}
         />
 
-        <Card className="pt-6">
+        <Card>
           <CardContent>
             <div className="space-y-6">
-              <div className="text-center">
-                <span className="text-lg font-bold text-gray-900">
+              <div className="text-left">
+                <span className="text-xl font-bold text-foreground">
                   {budgetUsedPercentage.toFixed(1)}%
                 </span>
               </div>
@@ -131,39 +133,78 @@ export default function AnalysisPage() {
                   style={{ width: `${Math.min(budgetUsedPercentage, 100)}%` }}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-lg font-semibold text-blue-900">
-                    {formatCurrency(totalBudget)}
-                  </div>
-                  <div className="text-xs text-blue-600">Budget</div>
-                </div>
-                <div className="bg-orange-50 rounded-lg p-3">
-                  <div className="text-lg font-semibold text-orange-900">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-lg font-semibold text-foreground">
                     {formatCurrency(totalExpenses)}
                   </div>
-                  <div className="text-xs text-orange-600">Spent</div>
+                  <div className="text-xs text-muted-foreground">Spent</div>
                 </div>
-                <div
-                  className={`rounded-lg p-3 ${
-                    remainingBudget >= 0 ? "bg-green-50" : "bg-red-50"
-                  }`}
-                >
+                <div className="bg-muted/50 rounded-lg p-3">
                   <div
                     className={`text-lg font-semibold ${
-                      remainingBudget >= 0 ? "text-green-900" : "text-red-900"
+                      remainingBudget >= 0
+                        ? "text-foreground"
+                        : "text-destructive"
                     }`}
                   >
                     {formatCurrency(Math.abs(remainingBudget))}
                   </div>
-                  <div
-                    className={`text-xs ${
-                      remainingBudget >= 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
+                  <div className="text-xs text-muted-foreground">
                     {remainingBudget >= 0 ? "Left" : "Over"}
                   </div>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Daily Average Spend */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-4">
+                  Daily Average Spend
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-foreground">
+                    {formatCurrency(dailyAverageSpend)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">per day</span>
+                </div>
+              </div>
+              {/* Top Spending Categories */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-4">
+                  Top Spending Categories
+                </h3>
+                {topCategories.length > 0 ? (
+                  <div className="space-y-3">
+                    {topCategories.map((category, index) => (
+                      <div
+                        key={category.category}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {index + 1}.
+                          </span>
+                          <span className="text-sm text-foreground">
+                            {category.category}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-foreground">
+                          {formatCurrency(category.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No spending categories
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>

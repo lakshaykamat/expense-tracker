@@ -331,18 +331,35 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
-    const budget = await this.findByMonth(userId, month);
-    const totalExpenses = await this.calculateSpentAmount(userId, month);
-    const categoryBreakdown = await this.expensesService.getCategoryBreakdown(
-      userId,
-      month,
-    );
-    const dailySpending = await this.expensesService.getDailySpending(
-      userId,
-      month,
-    );
+    // Get budget directly to avoid duplicate calculateSpentAmount call from buildBudgetResponse
+    const userIdQuery = buildUserIdQuery(userId);
+    const budgetQuery = { ...userIdQuery, month };
 
-    if (!budget) {
+    // Parallelize all independent database queries
+    const [budgetDoc, totalExpenses, categoryBreakdown, dailySpending] =
+      await Promise.all([
+        this.budgetModel.findOne(budgetQuery).lean(),
+        this.calculateSpentAmount(userId, month),
+        this.expensesService.getCategoryBreakdown(userId, month),
+        this.expensesService.getDailySpending(userId, month),
+      ]);
+
+    // Calculate days in month (simple calculation, no database call)
+    const [year, monthNum] = month.split('-');
+    const daysInMonth = new Date(
+      parseInt(year, 10),
+      parseInt(monthNum, 10),
+      0,
+    ).getDate();
+
+    // Calculate daily average spend
+    const dailyAverageSpend = daysInMonth > 0 ? totalExpenses / daysInMonth : 0;
+
+    // Get top spending categories (top 5)
+    // categoryBreakdown is already sorted by amount descending from aggregation
+    const topCategories = categoryBreakdown.slice(0, 5);
+
+    if (!budgetDoc) {
       return {
         totalBudget: 0,
         totalExpenses,
@@ -351,16 +368,24 @@ export class BudgetsService {
         budgetExists: false,
         categoryBreakdown,
         dailySpending,
+        dailyAverageSpend,
+        topCategories,
       };
     }
 
-    const totalBudget = budget.totalBudget;
+    const totalBudget = this.calculateTotalBudget(
+      budgetDoc.essentialItems || [],
+    );
     const remainingBudget = totalBudget - totalExpenses;
     const budgetUsedPercentage =
       totalBudget > 0 ? (totalExpenses / totalBudget) * 100 : 0;
 
     return {
-      budget,
+      budget: {
+        ...budgetDoc,
+        totalBudget,
+        spentAmount: totalExpenses,
+      },
       totalExpenses,
       totalBudget,
       remainingBudget,
@@ -368,6 +393,8 @@ export class BudgetsService {
       budgetExists: true,
       categoryBreakdown,
       dailySpending,
+      dailyAverageSpend,
+      topCategories,
     };
   }
 }
