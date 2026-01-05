@@ -8,14 +8,14 @@ import { MobileHeader } from "@/components/mobile-header";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap', // Optimize font loading
+  display: "swap", // Optimize font loading
   preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: 'swap', // Optimize font loading
+  display: "swap", // Optimize font loading
   preload: false, // Only preload primary font
 });
 
@@ -37,9 +37,7 @@ export const metadata: Metadata = {
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [
-      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    ],
+    apple: [{ url: "/icon-192x192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 
