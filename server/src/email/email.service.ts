@@ -6,15 +6,20 @@ import { createEmailTransporter } from './email.config';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
 
-  constructor(private configService: ConfigService) {
-    try {
-      this.transporter = createEmailTransporter(this.configService);
-    } catch (error) {
-      this.logger.error('Failed to create email transporter', error);
-      throw error;
+  constructor(private configService: ConfigService) {}
+
+  private getTransporter(): nodemailer.Transporter {
+    if (!this.transporter) {
+      try {
+        this.transporter = createEmailTransporter(this.configService);
+      } catch (error) {
+        this.logger.error('Failed to create email transporter', error);
+        throw error;
+      }
     }
+    return this.transporter;
   }
 
   async sendWeeklyStats(
@@ -31,7 +36,8 @@ export class EmailService {
     const html = this.generateEmailTemplate(stats);
 
     try {
-      await this.transporter.sendMail({
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
         from: this.configService.get<string>(
           'SMTP_FROM',
           'Expense Tracker <noreply@expensetracker.com>',
