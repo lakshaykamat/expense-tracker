@@ -26,7 +26,7 @@ export function ErrorDisplay({
   return (
     <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">{displayTitle}</h3>
+        <h3 className="text-base font-semibold">{displayTitle}</h3>
         <p className="text-sm text-muted-foreground">{error}</p>
       </div>
       <Button

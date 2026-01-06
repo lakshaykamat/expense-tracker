@@ -67,7 +67,7 @@ export function BudgetList({ budgets, onDelete, onEdit, isLoading, error, onRetr
         <div className="space-y-4">
           <Calendar className="w-12 h-12 mx-auto text-muted-foreground" />
           <div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No Budgets Yet</h3>
+            <h3 className="text-base font-medium text-foreground mb-2">No Budgets Yet</h3>
             <p className="text-sm text-muted-foreground">
               Create your first budget to start tracking your monthly expenses
             </p>
@@ -92,7 +92,7 @@ export function BudgetList({ budgets, onDelete, onEdit, isLoading, error, onRetr
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-foreground">
+                      <h3 className="text-base font-semibold text-foreground">
                         {formatMonth(budget.month)}
                       </h3>
                       <p className="text-sm text-muted-foreground">
@@ -109,22 +109,22 @@ export function BudgetList({ budgets, onDelete, onEdit, isLoading, error, onRetr
                   {/* Stats */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground">
+                      <div className="text-base font-bold text-foreground">
                         {formatCurrency(budget.totalBudget)}
                       </div>
-                      <div className="text-xs text-muted-foreground">Total Budget</div>
+                      <div className="text-sm text-muted-foreground">Total Budget</div>
                     </div>
                     <div className="text-center">
-                      <div className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-foreground'}`}>
+                      <div className={`text-base font-bold ${isOverBudget ? 'text-destructive' : 'text-foreground'}`}>
                         {formatCurrency(budget.spentAmount)}
                       </div>
-                      <div className="text-xs text-muted-foreground">Spent</div>
+                      <div className="text-sm text-muted-foreground">Spent</div>
                     </div>
                     <div className="text-center">
-                      <div className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
+                      <div className={`text-base font-bold ${isOverBudget ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
                         {formatCurrency(Math.abs(remaining))}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {isOverBudget ? 'Over' : 'Remaining'}
                       </div>
                     </div>

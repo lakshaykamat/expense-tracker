@@ -77,7 +77,7 @@ export function ExpenseList({
           title="No expenses found"
           description="Add your first expense to get started!"
           icon={
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
@@ -96,26 +96,26 @@ export function ExpenseList({
         onButtonClick={onAddExpense}
       />
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="divide-y divide-gray-200">
+      <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+        <div className="divide-y divide-border">
           {expenses.map((expense) => (
-            <div key={expense._id} className="px-6 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+            <div key={expense._id} className="px-6 py-6 flex items-center justify-between hover:bg-muted/50 transition-colors group">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-xl font-light text-gray-900 truncate">{expense.title}</h3>
-                  {expense.category && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 shrink-0">
-                      {expense.category}
-                    </span>
-                  )}
+                <div className="mb-1">
+                  <h3 className="text-base font-light text-foreground truncate">{expense.title}</h3>
                 </div>
                 {expense.description && (
-                  <p className="text-sm text-gray-500 truncate">
+                  <p className="text-sm text-muted-foreground truncate">
                     {expense.description}
                   </p>
                 )}
-                <p className="text-xs text-gray-400 mt-1">
-                  {format(new Date(expense.date), 'MMM dd, yyyy')}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(expense.date), 'MMM d')}
+                  {expense.category && (
+                    <span className="ml-1">
+                      {' '}· {expense.category.toUpperCase()}
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -134,13 +134,13 @@ export function ExpenseList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(expense)}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     aria-label="Delete expense"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="text-2xl font-light text-gray-900">
+                <div className="text-base font-light text-foreground">
                   {formatCurrency(expense.amount)}
                 </div>
               </div>

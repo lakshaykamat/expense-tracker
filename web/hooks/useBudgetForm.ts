@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CreateBudgetData, Budget, EssentialItem } from '@/types'
 import { getInitialBudgetFormData, calculateBudgetTotal } from '@/utils/form.utils'
+import { validateBudgetItemData } from '@/helpers/budget.helpers'
 
 interface UseBudgetFormOptions {
   editingBudget?: Budget | null
@@ -34,6 +35,12 @@ export function useBudgetForm({ editingBudget, onSubmit, open, defaultMonth }: U
     const item: EssentialItem = {
       name: newItemName.trim(),
       amount: newItemAmount ? parseFloat(newItemAmount) : undefined
+    }
+    
+    const validation = validateBudgetItemData(item)
+    if (!validation.valid) {
+      // Could show error message here, but for now just prevent adding
+      return
     }
     
     setFormData(prev => ({

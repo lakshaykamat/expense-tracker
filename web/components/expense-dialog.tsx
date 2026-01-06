@@ -78,6 +78,8 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                 onChange={handleFieldChange('title')}
                 placeholder="e.g., Coffee at Starbucks"
                 required
+                minLength={3}
+                maxLength={100}
                 className="h-11 text-base"
               />
             </div>
@@ -94,8 +96,8 @@ export function ExpenseDialog({ onSubmit, children, open: controlledOpen, onOpen
                   <Input
                     id="amount"
                     type="number"
-                    step="1"
-                    min="0"
+                    step="0.01"
+                    min="0.01"
                     value={formData.amount || ''}
                     onChange={handleFieldChange('amount')}
                     placeholder="0.00"

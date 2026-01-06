@@ -2,41 +2,31 @@
  * Budget business logic helpers
  */
 
-import { getCurrentMonth } from '@/utils/date.utils'
-import type { Budget } from '@/types'
-
 /**
- * Checks if a budget should update the current budget based on month
+ * Validates budget item data (business rules)
  */
-export function shouldUpdateCurrentBudget(budgetMonth: string): boolean {
-  const currentMonth = getCurrentMonth()
-  return budgetMonth === currentMonth
+export function validateBudgetItemData(data: {
+  name?: string;
+  amount?: number;
+}): { valid: boolean; error?: string } {
+  if (!data.name || !data.name.trim()) {
+    return { valid: false, error: "Item name is required" };
+  }
+  const trimmedName = data.name.trim();
+  if (trimmedName.length < 3) {
+    return {
+      valid: false,
+      error: "Item name must be at least 3 characters long",
+    };
+  }
+  if (trimmedName.length > 100) {
+    return {
+      valid: false,
+      error: "Item name must be at most 100 characters long",
+    };
+  }
+  if (data.amount !== undefined && data.amount !== null && data.amount < 0.01) {
+    return { valid: false, error: "Amount must be at least ₹0.01" };
+  }
+  return { valid: true };
 }
-
-/**
- * Updates budgets array and currentBudget in a single operation
- */
-export function updateBudgetState<T extends Budget>(
-  budgets: T[],
-  updatedBudget: T,
-  currentBudget: T | null,
-  budgetId: string
-): { budgets: T[]; currentBudget: T | null } {
-  const newBudgets = budgets.map(budget => budget._id === budgetId ? updatedBudget : budget)
-  const newCurrentBudget = currentBudget?._id === budgetId ? updatedBudget : currentBudget
-  return { budgets: newBudgets, currentBudget: newCurrentBudget }
-}
-
-/**
- * Removes a budget from both budgets array and currentBudget
- */
-export function removeBudgetState<T extends Budget>(
-  budgets: T[],
-  currentBudget: T | null,
-  budgetId: string
-): { budgets: T[]; currentBudget: T | null } {
-  const newBudgets = budgets.filter(budget => budget._id !== budgetId)
-  const newCurrentBudget = currentBudget?._id === budgetId ? null : currentBudget
-  return { budgets: newBudgets, currentBudget: newCurrentBudget }
-}
-

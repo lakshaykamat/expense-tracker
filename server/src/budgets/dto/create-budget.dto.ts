@@ -1,7 +1,24 @@
-import { IsString, IsArray, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  IsNumber,
+  Min,
+  MinLength,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
-export interface EssentialItemDto {
+export class EssentialItemDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(100)
   name: string;
+
+  @IsNumber()
+  @Min(0.01)
+  @IsOptional()
   amount?: number;
 }
 
@@ -11,5 +28,7 @@ export class CreateBudgetDto {
 
   @IsArray()
   @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => EssentialItemDto)
   essentialItems?: EssentialItemDto[];
 }

@@ -30,7 +30,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl">Expense Tracker</span>
+            <span className="font-bold text-base">Expense Tracker</span>
           </Link>
           
           <div className="flex space-x-1">

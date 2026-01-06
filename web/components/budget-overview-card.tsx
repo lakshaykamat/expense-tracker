@@ -49,7 +49,7 @@ const BudgetProgress = ({ percentage }: { percentage: number }) => {
   return (
     <>
       <div className="text-center mt-4 mb-4">
-        <span className="text-lg font-bold text-foreground">
+        <span className="text-base font-bold text-foreground">
           {percentage.toFixed(1)}%
         </span>
       </div>
@@ -97,10 +97,10 @@ const BugdetOverviewCardStats = ({
 
   return (
     <div className={`${getColorClasses()} rounded-lg p-3 border text-center`}>
-      <div className={`text-md font-semibold ${textColor}`}>
+      <div className={`text-base font-semibold ${textColor}`}>
         {formatCurrency(displayAmount)}
       </div>
-      <div className="text-xs text-muted-foreground">{displayLabel}</div>
+      <div className="text-sm text-muted-foreground">{displayLabel}</div>
     </div>
   );
 };

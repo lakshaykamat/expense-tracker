@@ -29,7 +29,10 @@ export default function AnalysisPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center w-full min-h-[60vh]">
+        <div
+          className="flex items-center justify-center w-full"
+          style={{ minHeight: "calc(100vh - 8rem)" }}
+        >
           <Spinner size="lg" />
         </div>
       </PageLayout>
@@ -39,7 +42,7 @@ export default function AnalysisPage() {
   if (error) {
     return (
       <PageLayout>
-        <div className="space-y-6">
+        <div className="space-y-8">
           <PageHeader
             availableMonths={availableMonths}
             selectedMonth={selectedMonth}
@@ -59,7 +62,7 @@ export default function AnalysisPage() {
   if (!analysisStats || !analysisStats.budgetExists) {
     return (
       <PageLayout>
-        <div className="space-y-6">
+        <div className="space-y-8">
           <PageHeader
             availableMonths={availableMonths}
             selectedMonth={selectedMonth}
@@ -98,7 +101,7 @@ export default function AnalysisPage() {
 
   return (
     <PageLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PageHeader
           availableMonths={availableMonths}
           selectedMonth={selectedMonth}

@@ -21,7 +21,7 @@ export function MobileHeader() {
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-center">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-lg">Expense Tracker</span>
+            <span className="font-bold text-base">Expense Tracker</span>
           </Link>
         </div>
       </div>

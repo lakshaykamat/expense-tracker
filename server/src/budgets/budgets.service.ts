@@ -56,11 +56,27 @@ export class BudgetsService {
 
   async findAll(userId: string) {
     const userIdQuery = buildUserIdQuery(userId);
-    const budgets = await this.budgetModel
-      .find(userIdQuery)
-      .sort({ month: -1 })
-      .lean()
-      .exec();
+    const budgets = await this.budgetModel.aggregate([
+      { $match: userIdQuery },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+      { $sort: { month: -1 } },
+    ]);
 
     if (budgets.length === 0) {
       return [];
@@ -72,7 +88,6 @@ export class BudgetsService {
 
     return budgets.map((budget) => ({
       ...budget,
-      totalBudget: this.calculateTotalBudget(budget.essentialItems),
       spentAmount: spentAmountsMap.get(budget.month) || 0,
     }));
   }
@@ -83,15 +98,27 @@ export class BudgetsService {
     }
 
     const userIdQuery = buildUserIdQuery(userId);
-    const budgets = await this.budgetModel
-      .find(userIdQuery)
-      .sort({ month: -1 })
-      .lean();
+    const budgets = await this.budgetModel.aggregate([
+      { $match: userIdQuery },
+      {
+        $addFields: {
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+      { $sort: { month: -1 } },
+    ]);
+
     return budgets.map((budget: any) => ({
       _id: budget._id.toString(),
       month: budget.month,
       essentialItems: JSON.stringify(budget.essentialItems || []),
-      totalBudget: this.calculateTotalBudget(budget.essentialItems || []),
+      totalBudget: budget.totalBudget || 0,
       userId: budget.userId.toString(),
       createdAt: budget.createdAt
         ? new Date(budget.createdAt).toISOString().split('T')[0]
@@ -108,11 +135,32 @@ export class BudgetsService {
     }
 
     const query = buildIdAndUserIdQuery(id, userId);
-    const budget = await this.budgetModel.findOne(query).lean();
-    if (!budget) {
+    const budgets = await this.budgetModel.aggregate([
+      { $match: query },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
+
+    if (!budgets || budgets.length === 0) {
       throw new NotFoundException('Budget not found');
     }
 
+    const budget = budgets[0];
     return this.buildBudgetResponse(budget, userId);
   }
 
@@ -126,16 +174,38 @@ export class BudgetsService {
     }
 
     const query = buildIdAndUserIdQuery(id, userId);
-    const budget = await this.budgetModel.findOneAndUpdate(
+    const updatedBudget = await this.budgetModel.findOneAndUpdate(
       query,
       updateBudgetDto,
-      { new: true, lean: true },
+      { new: true },
     );
 
-    if (!budget) {
+    if (!updatedBudget) {
       throw new NotFoundException('Budget not found');
     }
 
+    const budgets = await this.budgetModel.aggregate([
+      { $match: { _id: updatedBudget._id } },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
+
+    const budget = budgets[0];
     return this.buildBudgetResponse(budget, userId);
   }
 
@@ -159,12 +229,32 @@ export class BudgetsService {
     const userIdQuery = buildUserIdQuery(userId);
     const query = { ...userIdQuery, month };
 
-    const budget = await this.budgetModel.findOne(query).lean();
+    const budgets = await this.budgetModel.aggregate([
+      { $match: query },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
 
-    if (!budget) {
+    if (!budgets || budgets.length === 0) {
       return null;
     }
 
+    const budget = budgets[0];
     return this.buildBudgetResponse(budget, userId);
   }
 
@@ -172,21 +262,65 @@ export class BudgetsService {
     const currentMonth = getCurrentMonth();
 
     const userIdQuery = buildUserIdQuery(userId);
-    let budget = await this.budgetModel.findOne({
-      ...userIdQuery,
-      month: currentMonth,
-    });
+    const budgets = await this.budgetModel.aggregate([
+      { $match: { ...userIdQuery, month: currentMonth } },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
+
+    let budget = budgets && budgets.length > 0 ? budgets[0] : null;
 
     if (!budget) {
-      budget = await this.copyMostRecentBudget(userId, currentMonth);
+      const copiedBudget = await this.copyMostRecentBudget(
+        userId,
+        currentMonth,
+      );
+      if (copiedBudget) {
+        const sortedBudgets = await this.budgetModel.aggregate([
+          { $match: { _id: copiedBudget._id } },
+          {
+            $addFields: {
+              essentialItems: {
+                $sortArray: {
+                  input: { $ifNull: ['$essentialItems', []] },
+                  sortBy: { amount: -1 },
+                },
+              },
+              totalBudget: {
+                $reduce: {
+                  input: { $ifNull: ['$essentialItems', []] },
+                  initialValue: 0,
+                  in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+                },
+              },
+            },
+          },
+        ]);
+        budget =
+          sortedBudgets && sortedBudgets.length > 0 ? sortedBudgets[0] : null;
+      }
     }
 
     if (!budget) {
       return null;
     }
 
-    const budgetObj = budget.toObject();
-    return this.buildBudgetResponse(budgetObj, userId);
+    return this.buildBudgetResponse(budget, userId);
   }
 
   private async copyMostRecentBudget(userId: string, currentMonth: string) {
@@ -212,13 +346,6 @@ export class BudgetsService {
     return await newBudget.save();
   }
 
-  private calculateTotalBudget(essentialItems: EssentialItem[]): number {
-    return essentialItems.reduce(
-      (total, item) => total + (item.amount || 0),
-      0,
-    );
-  }
-
   private async calculateSpentAmount(
     userId: string,
     month: string,
@@ -230,7 +357,6 @@ export class BudgetsService {
     const spentAmount = await this.calculateSpentAmount(userId, budget.month);
     return {
       ...budget,
-      totalBudget: this.calculateTotalBudget(budget.essentialItems),
       spentAmount,
     };
   }
@@ -276,8 +402,30 @@ export class BudgetsService {
     }
 
     const savedBudget = await budget.save();
-    const savedBudgetObj = savedBudget.toObject();
-    return this.buildBudgetResponse(savedBudgetObj, userId);
+
+    const budgets = await this.budgetModel.aggregate([
+      { $match: { _id: savedBudget._id } },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
+
+    const budgetObj = budgets[0];
+    return this.buildBudgetResponse(budgetObj, userId);
   }
 
   async removeEssentialItem(
@@ -308,8 +456,30 @@ export class BudgetsService {
     );
 
     const savedBudget = await budget.save();
-    const savedBudgetObj = savedBudget.toObject();
-    return this.buildBudgetResponse(savedBudgetObj, userId);
+
+    const budgets = await this.budgetModel.aggregate([
+      { $match: { _id: savedBudget._id } },
+      {
+        $addFields: {
+          essentialItems: {
+            $sortArray: {
+              input: { $ifNull: ['$essentialItems', []] },
+              sortBy: { amount: -1 },
+            },
+          },
+          totalBudget: {
+            $reduce: {
+              input: { $ifNull: ['$essentialItems', []] },
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+            },
+          },
+        },
+      },
+    ]);
+
+    const budgetObj = budgets[0];
+    return this.buildBudgetResponse(budgetObj, userId);
   }
 
   async getEssentialItems(budgetId: string, userId: string) {
@@ -336,11 +506,33 @@ export class BudgetsService {
     const budgetQuery = { ...userIdQuery, month };
 
     // Parallelize all independent database queries
-    const [budgetDoc, totalExpenses, categoryBreakdown] = await Promise.all([
-      this.budgetModel.findOne(budgetQuery).lean(),
+    const [budgetDocs, totalExpenses, categoryBreakdown] = await Promise.all([
+      this.budgetModel.aggregate([
+        { $match: budgetQuery },
+        {
+          $addFields: {
+            essentialItems: {
+              $sortArray: {
+                input: { $ifNull: ['$essentialItems', []] },
+                sortBy: { amount: -1 },
+              },
+            },
+            totalBudget: {
+              $reduce: {
+                input: { $ifNull: ['$essentialItems', []] },
+                initialValue: 0,
+                in: { $add: ['$$value', { $ifNull: ['$$this.amount', 0] }] },
+              },
+            },
+          },
+        },
+      ]),
       this.calculateSpentAmount(userId, month),
       this.expensesService.getCategoryBreakdown(userId, month),
     ]);
+
+    const budgetDoc =
+      budgetDocs && budgetDocs.length > 0 ? budgetDocs[0] : null;
 
     // Calculate days in month (simple calculation, no database call)
     const [year, monthNum] = month.split('-');
@@ -369,9 +561,7 @@ export class BudgetsService {
       };
     }
 
-    const totalBudget = this.calculateTotalBudget(
-      budgetDoc.essentialItems || [],
-    );
+    const totalBudget = budgetDoc.totalBudget || 0;
     const remainingBudget = totalBudget - totalExpenses;
     const budgetUsedPercentage =
       totalBudget > 0 ? (totalExpenses / totalBudget) * 100 : 0;

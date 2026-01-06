@@ -40,10 +40,10 @@ export function BudgetDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-w-[95vw] w-full p-0 max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
         <DialogHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4 border-b border-border/10 shrink-0 bg-background">
-          <DialogTitle className="text-lg md:text-xl font-semibold text-foreground pr-8">
+          <DialogTitle className="text-xl font-semibold text-foreground pr-8">
             {editingBudget ? 'Edit Budget' : 'Create Budget'}
           </DialogTitle>
-          <DialogDescription className="text-xs md:text-sm text-muted-foreground">
+          <DialogDescription className="text-sm text-muted-foreground">
             Set your monthly budget and essential items
           </DialogDescription>
         </DialogHeader>
@@ -63,7 +63,7 @@ export function BudgetDialog({
                   value={formData.month}
                   onChange={(e) => setFormDataMonth(e.target.value)}
                   required
-                  className="h-10 md:h-11 text-sm md:text-base pl-10"
+                  className="h-10 md:h-11 text-base pl-10"
                 />
               </div>
             </div>
@@ -73,7 +73,7 @@ export function BudgetDialog({
                 <Label className="text-sm font-medium text-foreground">
                   Essential Items
                 </Label>
-                <div className="text-xs md:text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   Total: {formatCurrency(totalBudget)}
                 </div>
               </div>
@@ -84,21 +84,23 @@ export function BudgetDialog({
                   placeholder="Item name"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="flex-1 h-9 md:h-10 text-sm md:text-base"
+                  className="flex-1 h-9 md:h-10 text-base"
+                  minLength={3}
+                  maxLength={100}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEssentialItem())}
                 />
                 <div className="relative flex-1">
-                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none text-sm md:text-base">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none text-base">
                     ₹
                   </div>
                   <Input
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01"
                     value={newItemAmount}
                     onChange={(e) => setNewItemAmount(e.target.value)}
-                    className="w-full h-9 md:h-10 text-sm md:text-base pl-6 pr-2"
+                    className="w-full h-9 md:h-10 text-base pl-6 pr-2"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEssentialItem())}
                   />
                 </div>
@@ -121,9 +123,9 @@ export function BudgetDialog({
                       className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{item.name}</div>
+                        <div className="font-medium text-base truncate">{item.name}</div>
                         {item.amount && (
-                          <div className="text-xs md:text-sm text-muted-foreground">
+                          <div className="text-sm text-muted-foreground">
                             {formatCurrency(item.amount)}
                           </div>
                         )}
@@ -142,10 +144,10 @@ export function BudgetDialog({
                 </div>
               ) : (
                 <div className="text-center py-3 md:py-4 border-2 border-dashed border-muted rounded-md">
-                  <div className="text-xs md:text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     No essential items added yet
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Add items above to get started
                   </div>
                 </div>
@@ -157,7 +159,7 @@ export function BudgetDialog({
             <Button 
               type="submit" 
               disabled={isSubmitDisabled || isLoading}
-              className="w-full h-10 md:h-11 text-sm md:text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full h-10 md:h-11 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
