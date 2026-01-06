@@ -2,6 +2,9 @@
  * Budget business logic helpers
  */
 
+import type { Budget } from "@/types";
+import { getCurrentMonth } from "@/utils/date.utils";
+
 /**
  * Validates budget item data (business rules)
  */
@@ -29,4 +32,55 @@ export function validateBudgetItemData(data: {
     return { valid: false, error: "Amount must be at least ₹0.01" };
   }
   return { valid: true };
+}
+
+/**
+ * Checks if the current budget should be updated based on the month
+ */
+export function shouldUpdateCurrentBudget(month: string): boolean {
+  const currentMonth = getCurrentMonth();
+  return month === currentMonth;
+}
+
+/**
+ * Updates budget state after a budget update
+ */
+export function updateBudgetState(
+  budgets: Budget[],
+  updatedBudget: Budget,
+  currentBudget: Budget | null,
+  budgetId: string
+): { budgets: Budget[]; currentBudget: Budget | null } {
+  const newBudgets = budgets.map((budget) =>
+    budget._id === budgetId ? updatedBudget : budget
+  );
+
+  const newCurrentBudget =
+    currentBudget && currentBudget._id === budgetId
+      ? updatedBudget
+      : currentBudget;
+
+  return {
+    budgets: newBudgets,
+    currentBudget: newCurrentBudget,
+  };
+}
+
+/**
+ * Removes budget from state after deletion
+ */
+export function removeBudgetState(
+  budgets: Budget[],
+  currentBudget: Budget | null,
+  budgetId: string
+): { budgets: Budget[]; currentBudget: Budget | null } {
+  const newBudgets = budgets.filter((budget) => budget._id !== budgetId);
+
+  const newCurrentBudget =
+    currentBudget && currentBudget._id === budgetId ? null : currentBudget;
+
+  return {
+    budgets: newBudgets,
+    currentBudget: newCurrentBudget,
+  };
 }
