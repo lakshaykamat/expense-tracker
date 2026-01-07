@@ -1,171 +1,249 @@
-import { useState, useEffect, useCallback } from 'react'
-import { budgetsApi } from '@/lib/budgets-api'
-import type { Budget, CreateBudgetData, UpdateBudgetData, EssentialItem, UseBudgetsReturn } from '@/types'
-import { isValidMonthFormat } from '@/utils/validation.utils'
-import { extractErrorMessage, createInitialLoadingState, retryWithBackoff } from '@/helpers/api.helpers'
-import { shouldUpdateCurrentBudget, updateBudgetState, removeBudgetState } from '@/helpers/budget.helpers'
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import { budgetsApi } from "@/lib/budgets-api";
+import type {
+  Budget,
+  CreateBudgetData,
+  UpdateBudgetData,
+  EssentialItem,
+  UseBudgetsReturn,
+} from "@/types";
+import { isValidMonthFormat } from "@/utils/validation.utils";
+import { extractErrorMessage } from "@/helpers/api.helpers";
+import {
+  shouldUpdateCurrentBudget,
+  updateBudgetState,
+  removeBudgetState,
+} from "@/helpers/budget.helpers";
+import { swrKeys } from "@/lib/swr-config";
+import { swrFetcher } from "@/lib/swr-fetcher";
+import { mutate } from "swr";
 
 export function useBudgets(month?: string): UseBudgetsReturn {
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [currentBudget, setCurrentBudget] = useState<Budget | null>(null)
-  const [loading, setLoading] = useState(() => createInitialLoadingState(month, isValidMonthFormat))
-  const [error, setError] = useState<string | null>(null)
+  const {
+    data: budgets = [],
+    error: budgetsError,
+    isLoading: budgetsLoading,
+    mutate: refetchBudgets,
+  } = useSWR<Budget[]>(swrKeys.budgets.all, swrFetcher.budgets.getAll, {
+    revalidateOnFocus: true,
+  });
 
-  const fetchBudgets = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await retryWithBackoff(() => budgetsApi.getAll())
-      setBudgets(data)
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to fetch budgets'))
-    } finally {
-      setLoading(false)
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+    isLoading: currentBudgetLoading,
+    mutate: refetchCurrentBudget,
+  } = useSWR<Budget | null>(
+    swrKeys.budgets.current,
+    swrFetcher.budgets.getCurrent,
+    {
+      revalidateOnFocus: true,
     }
-  }, [])
+  );
 
-  const fetchBudgetByMonth = useCallback(async (monthParam: string) => {
-    if (!monthParam || !isValidMonthFormat(monthParam)) {
-      setCurrentBudget(null)
-      setLoading(false)
-      return
+  const monthKey =
+    month && isValidMonthFormat(month) ? swrKeys.budgets.byMonth(month) : null;
+  const {
+    data: budgetByMonth,
+    error: budgetByMonthError,
+    isLoading: budgetByMonthLoading,
+    mutate: refetchBudgetByMonth,
+  } = useSWR<Budget | null>(
+    monthKey,
+    () => (month ? swrFetcher.budgets.getByMonth(month) : null),
+    {
+      revalidateOnFocus: true,
     }
+  );
 
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await retryWithBackoff(() => budgetsApi.getByMonth(monthParam))
-      setCurrentBudget(data)
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to fetch budget'))
-      setCurrentBudget(null)
-    } finally {
-      setLoading(false)
+  const { trigger: createBudget } = useSWRMutation(
+    "/budgets",
+    async (url, { arg }: { arg: CreateBudgetData }) => {
+      return await budgetsApi.create(arg);
     }
-  }, [])
+  );
 
-  const fetchCurrentBudget = useCallback(async () => {
-    try {
-      setError(null)
-      const data = await retryWithBackoff(() => budgetsApi.getCurrent())
-      setCurrentBudget(data)
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Failed to fetch current budget'))
+  const { trigger: updateBudget } = useSWRMutation(
+    "/budgets",
+    async (url, { arg }: { arg: { id: string; data: UpdateBudgetData } }) => {
+      return await budgetsApi.update(arg.id, arg.data);
     }
-  }, [])
+  );
 
+  const { trigger: deleteBudget } = useSWRMutation(
+    "/budgets",
+    async (url, { arg }: { arg: string }) => {
+      await budgetsApi.delete(arg);
+    }
+  );
 
-  const addBudget = useCallback(async (data: CreateBudgetData): Promise<{ success: boolean; error?: string }> => {
+  const { trigger: addEssentialItemMutation } = useSWRMutation(
+    "/budgets/essential-items",
+    async (
+      url,
+      { arg }: { arg: { budgetId: string; item: EssentialItem } }
+    ) => {
+      return await budgetsApi.addEssentialItem(arg.budgetId, arg.item);
+    }
+  );
+
+  const { trigger: removeEssentialItemMutation } = useSWRMutation(
+    "/budgets/essential-items",
+    async (url, { arg }: { arg: { budgetId: string; itemName: string } }) => {
+      await budgetsApi.removeEssentialItem(arg.budgetId, arg.itemName);
+    }
+  );
+
+  const addBudget = async (data: CreateBudgetData) => {
     try {
-      setError(null)
-      const newBudget = await budgetsApi.create(data)
-      setBudgets(prev => [newBudget, ...prev])
-      
+      const newBudget = await createBudget(data);
+
+      // Invalidate and refetch relevant caches
+      await mutate(swrKeys.budgets.all);
       if (shouldUpdateCurrentBudget(data.month)) {
-        setCurrentBudget(newBudget)
+        await mutate(swrKeys.budgets.current);
       }
-      
-      return { success: true }
-    } catch (err) {
-      const errorMessage = extractErrorMessage(err, 'Failed to create budget')
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }, [])
-
-  const updateBudget = useCallback(async (id: string, data: UpdateBudgetData): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setError(null)
-      const updatedBudget = await budgetsApi.update(id, data)
-      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, updatedBudget, currentBudget, id)
-      setBudgets(newBudgets)
-      setCurrentBudget(newCurrentBudget)
-      return { success: true }
-    } catch (err) {
-      const errorMessage = extractErrorMessage(err, 'Failed to update budget')
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }, [budgets, currentBudget])
-
-  const deleteBudget = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setError(null)
-      await budgetsApi.delete(id)
-      const { budgets: newBudgets, currentBudget: newCurrentBudget } = removeBudgetState(budgets, currentBudget, id)
-      setBudgets(newBudgets)
-      setCurrentBudget(newCurrentBudget)
-      return { success: true }
-    } catch (err) {
-      const errorMessage = extractErrorMessage(err, 'Failed to delete budget')
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }, [budgets, currentBudget])
-
-  const addEssentialItem = useCallback(async (budgetId: string, item: EssentialItem): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setError(null)
-      const updatedBudget = await budgetsApi.addEssentialItem(budgetId, item)
-      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, updatedBudget, currentBudget, budgetId)
-      setBudgets(newBudgets)
-      setCurrentBudget(newCurrentBudget)
-      return { success: true }
-    } catch (err) {
-      const errorMessage = extractErrorMessage(err, 'Failed to add essential item')
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }, [budgets, currentBudget])
-
-  const removeEssentialItem = useCallback(async (budgetId: string, itemName: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setError(null)
-      await budgetsApi.removeEssentialItem(budgetId, itemName)
-      
-      const updatedBudget = budgets.find(b => b._id === budgetId)
-      if (!updatedBudget) {
-        return { success: false, error: 'Budget not found' }
+      if (month && data.month === month) {
+        await mutate(swrKeys.budgets.byMonth(month));
       }
-      
-      const newBudget = {
-        ...updatedBudget,
-        essentialItems: updatedBudget.essentialItems.filter(item => item.name !== itemName)
-      }
-      
-      const { budgets: newBudgets, currentBudget: newCurrentBudget } = updateBudgetState(budgets, newBudget, currentBudget, budgetId)
-      setBudgets(newBudgets)
-      setCurrentBudget(newCurrentBudget)
-      return { success: true }
-    } catch (err) {
-      const errorMessage = extractErrorMessage(err, 'Failed to remove essential item')
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }, [budgets, currentBudget])
 
-  // Fetch budget by month when month prop changes
-  useEffect(() => {
-    if (month && isValidMonthFormat(month)) {
-      fetchBudgetByMonth(month)
-    } else {
-      setCurrentBudget(null)
-      setLoading(false)
+      // Invalidate analysis stats
+      await mutate(swrKeys.analysis.stats(data.month));
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = extractErrorMessage(err, "Failed to create budget");
+      return { success: false, error: errorMessage };
     }
-  }, [month, fetchBudgetByMonth])
+  };
+
+  const updateBudgetHandler = async (id: string, data: UpdateBudgetData) => {
+    try {
+      const updatedBudget = await updateBudget({ id, data });
+
+      // Invalidate and refetch relevant caches
+      await mutate(swrKeys.budgets.all);
+      await mutate(swrKeys.budgets.current);
+      if (month) {
+        await mutate(swrKeys.budgets.byMonth(month));
+      }
+
+      // Invalidate analysis stats if month changed
+      if (data.month) {
+        await mutate(swrKeys.analysis.stats(data.month));
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = extractErrorMessage(err, "Failed to update budget");
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const deleteBudgetHandler = async (id: string) => {
+    try {
+      await deleteBudget(id);
+
+      // Invalidate and refetch relevant caches
+      await mutate(swrKeys.budgets.all);
+      await mutate(swrKeys.budgets.current);
+      if (month) {
+        await mutate(swrKeys.budgets.byMonth(month));
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = extractErrorMessage(err, "Failed to delete budget");
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const addEssentialItem = async (budgetId: string, item: EssentialItem) => {
+    try {
+      const updatedBudget = await addEssentialItemMutation({ budgetId, item });
+
+      // Invalidate and refetch relevant caches
+      await mutate(swrKeys.budgets.all);
+      await mutate(swrKeys.budgets.current);
+      if (month) {
+        await mutate(swrKeys.budgets.byMonth(month));
+      }
+
+      // Invalidate analysis stats
+      const budget = budgets.find((b) => b._id === budgetId);
+      if (budget) {
+        await mutate(swrKeys.analysis.stats(budget.month));
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = extractErrorMessage(
+        err,
+        "Failed to add essential item"
+      );
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const removeEssentialItem = async (budgetId: string, itemName: string) => {
+    try {
+      await removeEssentialItemMutation({ budgetId, itemName });
+
+      // Invalidate and refetch relevant caches
+      await mutate(swrKeys.budgets.all);
+      await mutate(swrKeys.budgets.current);
+      if (month) {
+        await mutate(swrKeys.budgets.byMonth(month));
+      }
+
+      // Invalidate analysis stats
+      const budget = budgets.find((b) => b._id === budgetId);
+      if (budget) {
+        await mutate(swrKeys.analysis.stats(budget.month));
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = extractErrorMessage(
+        err,
+        "Failed to remove essential item"
+      );
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const displayBudget = budgetByMonth || currentBudget || null;
+  const loading =
+    budgetsLoading || currentBudgetLoading || budgetByMonthLoading;
+  const error =
+    budgetsError || currentBudgetError || budgetByMonthError
+      ? extractErrorMessage(
+          budgetsError || currentBudgetError || budgetByMonthError,
+          "Failed to fetch budgets"
+        )
+      : null;
 
   return {
     budgets,
-    currentBudget,
+    currentBudget: displayBudget,
     loading,
     error,
-    fetchBudgets,
-    fetchCurrentBudget,
-    fetchBudgetByMonth,
+    fetchBudgets: async () => {
+      await refetchBudgets();
+    },
+    fetchCurrentBudget: async () => {
+      await refetchCurrentBudget();
+    },
+    fetchBudgetByMonth: async (monthParam: string) => {
+      if (isValidMonthFormat(monthParam)) {
+        await mutate(swrKeys.budgets.byMonth(monthParam));
+      }
+    },
     addBudget,
-    updateBudget,
-    deleteBudget,
+    updateBudget: updateBudgetHandler,
+    deleteBudget: deleteBudgetHandler,
     addEssentialItem,
-    removeEssentialItem
-  }
+    removeEssentialItem,
+  };
 }

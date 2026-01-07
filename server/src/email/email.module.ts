@@ -4,7 +4,10 @@ import { EmailService } from './email.service';
 import { WeeklyEmailService } from './weekly-email.service';
 import { EmailController } from './email.controller';
 import { User, UserSchema } from '../auth/schemas/user.schema';
-import { Expense, ExpenseSchema } from '../expenses/schemas/expense.schema';
+import {
+  Expense,
+  ExpenseSchema,
+} from '../expenses/domain/schemas/expense.schema';
 
 @Module({
   imports: [

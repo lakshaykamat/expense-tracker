@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { ExpensesService } from './expenses.service';
-import { CreateExpenseDto } from './dto/create-expense.dto';
-import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { LoggedInUser } from '../common/decorators/loggedin-user.decorator';
-import type { UserDocument } from '../auth/schemas/user.schema';
-import { convertToCSV } from '../common/utils/csv.utils';
+import { ExpensesService } from '../../application/expenses.service';
+import { CreateExpenseDto } from '../dto/create-expense.dto';
+import { UpdateExpenseDto } from '../dto/update-expense.dto';
+import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import { LoggedInUser } from '../../../common/decorators/loggedin-user.decorator';
+import type { UserDocument } from '../../../auth/schemas/user.schema';
+import { convertToCSV } from '../../../common/utils/csv.utils';
 
 export class BulkCreateExpenseDto {
   expenses: CreateExpenseDto[];

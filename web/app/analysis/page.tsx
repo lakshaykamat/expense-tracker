@@ -21,6 +21,7 @@ export default function AnalysisPage() {
     error: statsError,
     dailyAverageSpend,
     topCategories,
+    refetch,
   } = useAnalysisStats(selectedMonth);
 
   const loading = statsLoading;
@@ -52,7 +53,7 @@ export default function AnalysisPage() {
           <ErrorDisplay
             error={error}
             title="Failed to load analysis data"
-            onRetry={() => window.location.reload()}
+            onRetry={() => refetch()}
           />
         </div>
       </PageLayout>

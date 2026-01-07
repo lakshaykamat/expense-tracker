@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EmailService } from './email.service';
 import { User, UserDocument } from '../auth/schemas/user.schema';
-import { Expense, ExpenseDocument } from '../expenses/schemas/expense.schema';
+import {
+  Expense,
+  ExpenseDocument,
+} from '../expenses/domain/schemas/expense.schema';
 import { toObjectId } from '../common/utils/query.utils';
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { EssentialItem } from '../schemas/budget.schema';
+import { EssentialItem } from '../../domain/schemas/budget.schema';
 
 export class BudgetResponseDto {
   _id: string;

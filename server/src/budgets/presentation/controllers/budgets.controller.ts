@@ -15,12 +15,12 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { BudgetsService } from './budgets.service';
-import { CreateBudgetDto } from './dto/create-budget.dto';
-import { UpdateBudgetDto } from './dto/update-budget.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { type EssentialItem } from './schemas/budget.schema';
-import { convertToCSV } from '../common/utils/csv.utils';
+import { BudgetsService } from '../../application/budgets.service';
+import { CreateBudgetDto } from '../dto/create-budget.dto';
+import { UpdateBudgetDto } from '../dto/update-budget.dto';
+import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import { type EssentialItem } from '../../domain/schemas/budget.schema';
+import { convertToCSV } from '../../../common/utils/csv.utils';
 
 @Controller('budgets')
 @UseGuards(JwtAuthGuard)
