@@ -48,12 +48,18 @@ export class ExpensesRepository {
       query.date = dateQuery;
     }
 
-    return this.expenseModel.find(query).sort({ date: -1 }).lean();
+    return this.expenseModel
+      .find(query)
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
   }
 
   async findAllForExport(userId: string) {
     const userIdQuery = buildUserIdQuery(userId);
-    return this.expenseModel.find(userIdQuery).sort({ date: -1 }).lean();
+    return this.expenseModel
+      .find(userIdQuery)
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
   }
 
   async findById(id: string, userId: string) {
