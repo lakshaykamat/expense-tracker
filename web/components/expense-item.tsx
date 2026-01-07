@@ -62,3 +62,4 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
     </div>
   );
 }
+

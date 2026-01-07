@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSwipeable } from "react-swipeable";
 import { Expense } from "@/types";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils/currency.utils";
-import { Edit, Trash2 } from "lucide-react";
 
 interface SwipeableExpenseItemProps {
   expense: Expense;
@@ -22,14 +21,27 @@ export function SwipeableExpenseItem({
 }: SwipeableExpenseItemProps) {
   const [offset, setOffset] = useState(0);
   const [swiping, setSwiping] = useState(false);
+  const isHorizontalSwipe = useRef<boolean | null>(null);
 
   const handlers = useSwipeable({
-    onSwiping: ({ deltaX }) => {
+    onSwiping: ({ deltaX, deltaY, first }) => {
+      // On first movement, determine if this is a horizontal or vertical gesture
+      if (first) {
+        isHorizontalSwipe.current =
+          Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10;
+      }
+
+      // Only handle horizontal swipes
+      if (!isHorizontalSwipe.current) return;
+
       setSwiping(true);
       setOffset(Math.max(-120, Math.min(120, deltaX)));
     },
     onSwipedLeft: ({ deltaX }) => {
+      if (!isHorizontalSwipe.current) return;
       setSwiping(false);
+      isHorizontalSwipe.current = null;
+
       if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
         onEdit(expense);
         setTimeout(() => setOffset(0), 100);
@@ -38,7 +50,10 @@ export function SwipeableExpenseItem({
       }
     },
     onSwipedRight: ({ deltaX }) => {
+      if (!isHorizontalSwipe.current) return;
       setSwiping(false);
+      isHorizontalSwipe.current = null;
+
       if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
         onDelete(expense);
         setTimeout(() => setOffset(0), 100);
@@ -48,10 +63,11 @@ export function SwipeableExpenseItem({
     },
     onSwiped: () => {
       setSwiping(false);
+      isHorizontalSwipe.current = null;
       if (Math.abs(offset) < SWIPE_THRESHOLD) setOffset(0);
     },
     trackMouse: false,
-    preventScrollOnSwipe: true,
+    preventScrollOnSwipe: false,
     delta: 10,
   });
 
