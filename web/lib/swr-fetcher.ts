@@ -15,18 +15,6 @@ export const swrFetcher = {
     },
   },
   budgets: {
-    getAll: async (): Promise<Budget[]> => {
-      const response = await api.get<ApiResponse<Budget[]>>("/budgets");
-      return response.data.data || [];
-    },
-    getCurrent: async (): Promise<Budget | null> => {
-      try {
-        const response = await api.get<ApiResponse<Budget>>("/budgets/current");
-        return response.data.data || null;
-      } catch {
-        return null;
-      }
-    },
     getByMonth: async (month: string): Promise<Budget | null> => {
       try {
         const response = await api.get<ApiResponse<Budget>>(

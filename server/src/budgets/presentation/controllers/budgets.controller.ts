@@ -32,16 +32,6 @@ export class BudgetsController {
     return this.budgetsService.create(createBudgetDto, req.user.userId);
   }
 
-  @Get()
-  findAll(@Request() req) {
-    return this.budgetsService.findAll(req.user.userId);
-  }
-
-  @Get('current')
-  getCurrent(@Request() req) {
-    return this.budgetsService.getCurrentBudget(req.user.userId);
-  }
-
   @Get('month/:month')
   findByMonth(@Param('month') month: string, @Request() req) {
     return this.budgetsService.findByMonth(req.user.userId, month);

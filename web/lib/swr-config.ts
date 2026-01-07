@@ -30,8 +30,6 @@ export const swrKeys = {
     byId: (id: string) => `/expenses/${id}`,
   },
   budgets: {
-    all: '/budgets',
-    current: '/budgets/current',
     byId: (id: string) => `/budgets/${id}`,
     byMonth: (month: string) => `/budgets/month/${month}`,
   },

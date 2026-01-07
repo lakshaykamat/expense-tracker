@@ -8,52 +8,31 @@ import type {
   EssentialItem,
   UseBudgetsReturn,
 } from "@/types";
+import { getCurrentMonth } from "@/utils/date.utils";
 import { isValidMonthFormat } from "@/utils/validation.utils";
 import { extractErrorMessage } from "@/helpers/api.helpers";
-import {
-  shouldUpdateCurrentBudget,
-  updateBudgetState,
-  removeBudgetState,
-} from "@/helpers/budget.helpers";
 import { swrKeys } from "@/lib/swr-config";
 import { swrFetcher } from "@/lib/swr-fetcher";
 import { mutate } from "swr";
 
 export function useBudgets(month?: string): UseBudgetsReturn {
-  const {
-    data: budgets = [],
-    error: budgetsError,
-    isLoading: budgetsLoading,
-    mutate: refetchBudgets,
-  } = useSWR<Budget[]>(swrKeys.budgets.all, swrFetcher.budgets.getAll, {
-    revalidateOnFocus: true,
-  });
+  const monthToUse = month || getCurrentMonth();
+  const cacheKey =
+    monthToUse && isValidMonthFormat(monthToUse)
+      ? swrKeys.budgets.byMonth(monthToUse)
+      : null;
 
   const {
-    data: currentBudget,
-    error: currentBudgetError,
-    isLoading: currentBudgetLoading,
-    mutate: refetchCurrentBudget,
+    data: currentBudget = null,
+    error,
+    isLoading,
+    mutate: refetch,
   } = useSWR<Budget | null>(
-    swrKeys.budgets.current,
-    swrFetcher.budgets.getCurrent,
+    cacheKey,
+    cacheKey ? () => swrFetcher.budgets.getByMonth(monthToUse) : null,
     {
       revalidateOnFocus: true,
-    }
-  );
-
-  const monthKey =
-    month && isValidMonthFormat(month) ? swrKeys.budgets.byMonth(month) : null;
-  const {
-    data: budgetByMonth,
-    error: budgetByMonthError,
-    isLoading: budgetByMonthLoading,
-    mutate: refetchBudgetByMonth,
-  } = useSWR<Budget | null>(
-    monthKey,
-    () => (month ? swrFetcher.budgets.getByMonth(month) : null),
-    {
-      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
     }
   );
 
@@ -97,19 +76,20 @@ export function useBudgets(month?: string): UseBudgetsReturn {
 
   const addBudget = async (data: CreateBudgetData) => {
     try {
-      const newBudget = await createBudget(data);
+      await createBudget(data);
 
       // Invalidate and refetch relevant caches
-      await mutate(swrKeys.budgets.all);
-      if (shouldUpdateCurrentBudget(data.month)) {
-        await mutate(swrKeys.budgets.current);
+      if (data.month) {
+        await mutate(swrKeys.budgets.byMonth(data.month));
       }
-      if (month && data.month === month) {
-        await mutate(swrKeys.budgets.byMonth(month));
+      if (monthToUse && data.month === monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
       }
 
       // Invalidate analysis stats
-      await mutate(swrKeys.analysis.stats(data.month));
+      if (data.month) {
+        await mutate(swrKeys.analysis.stats(data.month));
+      }
 
       return { success: true };
     } catch (err: any) {
@@ -120,13 +100,15 @@ export function useBudgets(month?: string): UseBudgetsReturn {
 
   const updateBudgetHandler = async (id: string, data: UpdateBudgetData) => {
     try {
-      const updatedBudget = await updateBudget({ id, data });
+      await updateBudget({ id, data });
 
       // Invalidate and refetch relevant caches
-      await mutate(swrKeys.budgets.all);
-      await mutate(swrKeys.budgets.current);
-      if (month) {
-        await mutate(swrKeys.budgets.byMonth(month));
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+      }
+      // Invalidate the month that was updated if different
+      if (data.month && data.month !== monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(data.month));
       }
 
       // Invalidate analysis stats if month changed
@@ -146,10 +128,12 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       await deleteBudget(id);
 
       // Invalidate and refetch relevant caches
-      await mutate(swrKeys.budgets.all);
-      await mutate(swrKeys.budgets.current);
-      if (month) {
-        await mutate(swrKeys.budgets.byMonth(month));
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+      }
+      // Invalidate analysis stats for the month
+      if (monthToUse) {
+        await mutate(swrKeys.analysis.stats(monthToUse));
       }
 
       return { success: true };
@@ -161,19 +145,12 @@ export function useBudgets(month?: string): UseBudgetsReturn {
 
   const addEssentialItem = async (budgetId: string, item: EssentialItem) => {
     try {
-      const updatedBudget = await addEssentialItemMutation({ budgetId, item });
+      await addEssentialItemMutation({ budgetId, item });
 
       // Invalidate and refetch relevant caches
-      await mutate(swrKeys.budgets.all);
-      await mutate(swrKeys.budgets.current);
-      if (month) {
-        await mutate(swrKeys.budgets.byMonth(month));
-      }
-
-      // Invalidate analysis stats
-      const budget = budgets.find((b) => b._id === budgetId);
-      if (budget) {
-        await mutate(swrKeys.analysis.stats(budget.month));
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+        await mutate(swrKeys.analysis.stats(monthToUse));
       }
 
       return { success: true };
@@ -191,16 +168,9 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       await removeEssentialItemMutation({ budgetId, itemName });
 
       // Invalidate and refetch relevant caches
-      await mutate(swrKeys.budgets.all);
-      await mutate(swrKeys.budgets.current);
-      if (month) {
-        await mutate(swrKeys.budgets.byMonth(month));
-      }
-
-      // Invalidate analysis stats
-      const budget = budgets.find((b) => b._id === budgetId);
-      if (budget) {
-        await mutate(swrKeys.analysis.stats(budget.month));
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+        await mutate(swrKeys.analysis.stats(monthToUse));
       }
 
       return { success: true };
@@ -213,27 +183,20 @@ export function useBudgets(month?: string): UseBudgetsReturn {
     }
   };
 
-  const displayBudget = budgetByMonth || currentBudget || null;
-  const loading =
-    budgetsLoading || currentBudgetLoading || budgetByMonthLoading;
-  const error =
-    budgetsError || currentBudgetError || budgetByMonthError
-      ? extractErrorMessage(
-          budgetsError || currentBudgetError || budgetByMonthError,
-          "Failed to fetch budgets"
-        )
-      : null;
-
   return {
-    budgets,
-    currentBudget: displayBudget,
-    loading,
-    error,
+    budgets: [],
+    currentBudget,
+    loading: isLoading,
+    error: error ? extractErrorMessage(error, "Failed to fetch budget") : null,
     fetchBudgets: async () => {
-      await refetchBudgets();
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+      }
     },
     fetchCurrentBudget: async () => {
-      await refetchCurrentBudget();
+      if (monthToUse) {
+        await mutate(swrKeys.budgets.byMonth(monthToUse));
+      }
     },
     fetchBudgetByMonth: async (monthParam: string) => {
       if (isValidMonthFormat(monthParam)) {

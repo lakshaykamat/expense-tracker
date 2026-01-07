@@ -9,23 +9,6 @@ import type {
 } from "@/types";
 
 export const budgetsApi = {
-  // Get all budgets for the user
-  async getAll(): Promise<Budget[]> {
-    const response = await api.get<ApiResponse<Budget[]>>("/budgets");
-    return response.data.data;
-  },
-
-  // Get current month budget
-  async getCurrent(): Promise<Budget | null> {
-    try {
-      const response = await api.get<ApiResponse<Budget>>("/budgets/current");
-      return response.data.data;
-    } catch (error) {
-      // Return null if no current budget exists
-      return null;
-    }
-  },
-
   // Get budget by ID
   async getById(id: string): Promise<Budget> {
     const response = await api.get<ApiResponse<Budget>>(`/budgets/${id}`);

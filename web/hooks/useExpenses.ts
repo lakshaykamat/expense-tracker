@@ -89,7 +89,6 @@ export function useExpenses(month?: string): UseExpensesReturn {
       await mutate(swrKeys.analysis.stats(currentMonth));
 
       // Invalidate budgets to update spent amounts
-      await mutate(swrKeys.budgets.all);
       await mutate(swrKeys.budgets.byMonth(currentMonth));
 
       return { success: true };
@@ -109,7 +108,6 @@ export function useExpenses(month?: string): UseExpensesReturn {
       const currentMonth = month || getCurrentMonth();
       await mutate(swrKeys.expenses.all(currentMonth));
       await mutate(swrKeys.analysis.stats(currentMonth));
-      await mutate(swrKeys.budgets.all);
       await mutate(swrKeys.budgets.byMonth(currentMonth));
 
       return { success: true };
@@ -129,7 +127,6 @@ export function useExpenses(month?: string): UseExpensesReturn {
       const currentMonth = month || getCurrentMonth();
       await mutate(swrKeys.expenses.all(currentMonth));
       await mutate(swrKeys.analysis.stats(currentMonth));
-      await mutate(swrKeys.budgets.all);
       await mutate(swrKeys.budgets.byMonth(currentMonth));
 
       return { success: true };
