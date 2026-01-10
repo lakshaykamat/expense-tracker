@@ -22,49 +22,96 @@ export function SwipeableExpenseItem({
   const [offset, setOffset] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const isHorizontalSwipe = useRef<boolean | null>(null);
+  const initialDelta = useRef<{ x: number; y: number } | null>(null);
 
   const handlers = useSwipeable({
     onSwiping: ({ deltaX, deltaY, first }) => {
       // On first movement, determine if this is a horizontal or vertical gesture
       if (first) {
-        isHorizontalSwipe.current =
-          Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10;
+        initialDelta.current = { x: deltaX, y: deltaY };
+        isHorizontalSwipe.current = null;
       }
 
-      // Only handle horizontal swipes
-      if (!isHorizontalSwipe.current) return;
+      // Determine direction based on movement
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
 
-      setSwiping(true);
-      setOffset(Math.max(-120, Math.min(120, deltaX)));
+      // Only determine direction if we've moved enough (15px threshold)
+      if (isHorizontalSwipe.current === null && (absX > 15 || absY > 15)) {
+        isHorizontalSwipe.current = absX > absY;
+      }
+
+      // Only handle horizontal swipes - update offset and swiping state
+      if (isHorizontalSwipe.current === true) {
+        setSwiping(true);
+        setOffset(Math.max(-120, Math.min(120, deltaX)));
+      } else if (isHorizontalSwipe.current === false) {
+        // Vertical scroll - reset everything and don't interfere
+        setSwiping(false);
+        setOffset(0);
+      }
     },
     onSwipedLeft: ({ deltaX }) => {
-      if (!isHorizontalSwipe.current) return;
       setSwiping(false);
-      isHorizontalSwipe.current = null;
+      const absX = Math.abs(deltaX);
 
-      if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+      // Trigger if it was determined to be horizontal (or not yet determined but not vertical)
+      // AND threshold met AND we actually moved horizontally (offset was set)
+      const wasHorizontal =
+        isHorizontalSwipe.current === true ||
+        (isHorizontalSwipe.current !== false && absX >= SWIPE_THRESHOLD);
+
+      if (wasHorizontal && absX >= SWIPE_THRESHOLD) {
+        // Reset refs immediately
+        isHorizontalSwipe.current = null;
+        initialDelta.current = null;
+
+        // Call callback to open dialog immediately
         onEdit(expense);
-        setTimeout(() => setOffset(0), 100);
+
+        // Reset offset after a brief delay
+        setTimeout(() => setOffset(0), 150);
       } else {
+        // Not a valid swipe - reset everything
         setOffset(0);
+        isHorizontalSwipe.current = null;
+        initialDelta.current = null;
       }
     },
     onSwipedRight: ({ deltaX }) => {
-      if (!isHorizontalSwipe.current) return;
       setSwiping(false);
-      isHorizontalSwipe.current = null;
+      const absX = Math.abs(deltaX);
 
-      if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+      // Trigger if it was determined to be horizontal (or not yet determined but not vertical)
+      // AND threshold met AND we actually moved horizontally (offset was set)
+      const wasHorizontal =
+        isHorizontalSwipe.current === true ||
+        (isHorizontalSwipe.current !== false && absX >= SWIPE_THRESHOLD);
+
+      if (wasHorizontal && absX >= SWIPE_THRESHOLD) {
+        // Reset refs immediately
+        isHorizontalSwipe.current = null;
+        initialDelta.current = null;
+
+        // Call callback to open dialog immediately
         onDelete(expense);
-        setTimeout(() => setOffset(0), 100);
+
+        // Reset offset after a brief delay
+        setTimeout(() => setOffset(0), 150);
       } else {
+        // Not a valid swipe - reset everything
         setOffset(0);
+        isHorizontalSwipe.current = null;
+        initialDelta.current = null;
       }
     },
     onSwiped: () => {
       setSwiping(false);
+      if (Math.abs(offset) < SWIPE_THRESHOLD) {
+        setOffset(0);
+      }
       isHorizontalSwipe.current = null;
-      if (Math.abs(offset) < SWIPE_THRESHOLD) setOffset(0);
+      initialDelta.current = null;
     },
     trackMouse: false,
     preventScrollOnSwipe: false,
