@@ -25,6 +25,12 @@ export function formatExpenseForExport(expense: any): any {
   };
 }
 
+function trimString(value: any): string | undefined {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
 export function prepareExpenseForCreate(
   dto: any,
   userId: string,
@@ -32,6 +38,9 @@ export function prepareExpenseForCreate(
 ): any {
   return {
     ...dto,
+    title: trimString(dto.title) || '',
+    description: trimString(dto.description),
+    category: trimString(dto.category),
     userId: userIdObj,
     date: dto.date ? normalizeDateToUTC(dto.date) : new Date(),
   };
@@ -39,6 +48,16 @@ export function prepareExpenseForCreate(
 
 export function prepareExpenseForUpdate(dto: any): any {
   const updateData: any = { ...dto };
+
+  if (dto.title !== undefined) {
+    updateData.title = trimString(dto.title) || '';
+  }
+  if (dto.description !== undefined) {
+    updateData.description = trimString(dto.description);
+  }
+  if (dto.category !== undefined) {
+    updateData.category = trimString(dto.category);
+  }
   if (dto.date) {
     const date = normalizeDateToUTC(dto.date);
     if (isNaN(date.getTime())) {
@@ -46,6 +65,7 @@ export function prepareExpenseForUpdate(dto: any): any {
     }
     updateData.date = date;
   }
+
   return updateData;
 }
 

@@ -28,6 +28,8 @@ import {
   calculateRemainingBudget,
   formatBudgetForExport,
   validateEssentialItem,
+  prepareBudgetForCreate,
+  prepareBudgetForUpdate,
 } from './utils/budgets.utils';
 
 @Injectable()
@@ -52,10 +54,13 @@ export class BudgetsService {
       throw new BadRequestException('Budget already exists for this month');
     }
 
+    // Trim all string inputs before creating
+    const preparedData = prepareBudgetForCreate(createBudgetDto);
+
     return this.repository.create({
       userId,
-      month: createBudgetDto.month,
-      essentialItems: createBudgetDto.essentialItems,
+      month: preparedData.month,
+      essentialItems: preparedData.essentialItems,
     });
   }
 
@@ -107,10 +112,13 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
+    // Trim all string inputs before updating
+    const preparedData = prepareBudgetForUpdate(updateBudgetDto);
+
     const updatedBudget = await this.repository.update(
       id,
       userId,
-      updateBudgetDto,
+      preparedData,
     );
     if (!updatedBudget) {
       throw new NotFoundException('Budget not found');
@@ -212,8 +220,18 @@ export class BudgetsService {
       throw new BadRequestException('Invalid budget ID format');
     }
 
+    // Trim item name before validation and saving
+    const trimmedName = typeof item.name === 'string' ? item.name.trim() : '';
+    if (!trimmedName) {
+      throw new BadRequestException('Item name is required');
+    }
+    const trimmedItem: EssentialItem = {
+      ...item,
+      name: trimmedName,
+    };
+
     try {
-      validateEssentialItem(item);
+      validateEssentialItem(trimmedItem);
     } catch (error: any) {
       throw new BadRequestException(error.message);
     }
@@ -224,11 +242,11 @@ export class BudgetsService {
     }
 
     const existingItem = budget.essentialItems.find(
-      (existing) => existing.name === item.name,
+      (existing) => existing.name === trimmedItem.name,
     );
 
     if (!existingItem) {
-      budget.essentialItems.push(item);
+      budget.essentialItems.push(trimmedItem);
       await budget.save();
     }
 
@@ -251,11 +269,9 @@ export class BudgetsService {
       throw new BadRequestException('Invalid budget ID format');
     }
 
-    if (
-      !itemName ||
-      typeof itemName !== 'string' ||
-      itemName.trim().length === 0
-    ) {
+    // Trim and validate item name
+    const trimmedItemName = typeof itemName === 'string' ? itemName.trim() : '';
+    if (!trimmedItemName) {
       throw new BadRequestException('Item name is required');
     }
 
@@ -265,7 +281,7 @@ export class BudgetsService {
     }
 
     budget.essentialItems = budget.essentialItems.filter(
-      (item) => item.name !== itemName,
+      (item) => item.name !== trimmedItemName,
     );
 
     await budget.save();

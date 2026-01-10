@@ -21,7 +21,10 @@ export function calculateDaysForAverage(month: string): number {
   return daysInMonth;
 }
 
-export function calculateDailyAverage(totalExpenses: number, days: number): number {
+export function calculateDailyAverage(
+  totalExpenses: number,
+  days: number,
+): number {
   return days > 0 ? totalExpenses / days : 0;
 }
 
@@ -59,7 +62,11 @@ export function validateEssentialItem(item: {
   name?: string;
   amount?: number;
 }): void {
-  if (!item.name || typeof item.name !== 'string' || item.name.trim().length === 0) {
+  if (
+    !item.name ||
+    typeof item.name !== 'string' ||
+    item.name.trim().length === 0
+  ) {
     throw new Error('Item name is required');
   }
 
@@ -71,3 +78,43 @@ export function validateEssentialItem(item: {
   }
 }
 
+function trimString(value: any): string | undefined {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+export function prepareBudgetForCreate(dto: {
+  month: string;
+  essentialItems?: Array<{ name: string; amount?: number }>;
+}): {
+  month: string;
+  essentialItems?: Array<{ name: string; amount?: number }>;
+} {
+  return {
+    ...dto,
+    essentialItems: dto.essentialItems?.map((item) => ({
+      ...item,
+      name: trimString(item.name) || '',
+    })),
+  };
+}
+
+export function prepareBudgetForUpdate(dto: {
+  month?: string;
+  essentialItems?: Array<{ name: string; amount?: number }>;
+}): {
+  month?: string;
+  essentialItems?: Array<{ name: string; amount?: number }>;
+} {
+  const updateData: any = { ...dto };
+
+  if (dto.essentialItems !== undefined) {
+    updateData.essentialItems = dto.essentialItems.map((item) => ({
+      ...item,
+      name: trimString(item.name) || '',
+    }));
+  }
+
+  return updateData;
+}
