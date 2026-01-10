@@ -62,12 +62,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SWRProvider>
-          <Navigation />
-          <MobileHeader />
-          <main className="min-h-screen bg-background md:pt-0 pb-16 md:pb-0">
-            {children}
-          </main>
-          <MobileNavigation />
+        <Navigation />
+        <MobileHeader />
+        <main className="min-h-screen bg-background md:pt-0 pb-16 md:pb-0">
+          {children}
+        </main>
+        <MobileNavigation />
         </SWRProvider>
       </body>
     </html>

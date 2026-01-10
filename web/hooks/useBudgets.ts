@@ -90,7 +90,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       if (data.month) {
         await mutate(swrKeys.analysis.stats(data.month));
       }
-
+      
       return { success: true };
     } catch (err: any) {
       const errorMessage = extractErrorMessage(err, "Failed to create budget");

@@ -21,13 +21,13 @@ interface ExpenseListProps {
   availableMonths: string[];
 }
 
-export function ExpenseList({
-  expenses,
-  onDelete,
-  onEdit,
+export function ExpenseList({ 
+  expenses, 
+  onDelete, 
+  onEdit, 
   onAddExpense,
-  onRetry,
-  isLoading = false,
+  onRetry, 
+  isLoading = false, 
   error,
   selectedMonth,
   onMonthChange,

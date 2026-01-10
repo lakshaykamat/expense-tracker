@@ -56,10 +56,10 @@ export function useExpenses(month?: string): UseExpensesReturn {
       }
 
       const validation = validateExpenseData(arg.data);
-      if (!validation.valid) {
+    if (!validation.valid) {
         throw new Error(validation.error);
-      }
-
+    }
+    
       const response = await expensesApi.update(arg.id, arg.data);
       return response.data;
     }
@@ -81,7 +81,7 @@ export function useExpenses(month?: string): UseExpensesReturn {
 
       // Invalidate and refetch relevant caches
       const currentMonth = month || getCurrentMonth();
-      if (shouldIncludeInCurrentMonth(data.date, currentMonth)) {
+        if (shouldIncludeInCurrentMonth(data.date, currentMonth)) {
         await mutate(swrKeys.expenses.all(currentMonth));
       }
 
