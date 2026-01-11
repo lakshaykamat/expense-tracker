@@ -1,9 +1,20 @@
-import { Injectable, ConflictException, UnauthorizedException, Logger } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { JwtService } from "./jwt.service";
-import type { LoginDto, RegisterDto, AuthResponse, RefreshTokenDto } from "./auth.types";
-import { User, UserDocument } from "./schemas/user.schema";
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { JwtService } from './jwt.service';
+import type {
+  LoginDto,
+  RegisterDto,
+  AuthResponse,
+  RefreshTokenDto,
+} from './auth.types';
+import { User, UserDocument } from './schemas/user.schema';
 
 export interface UserMethods {
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -25,19 +36,30 @@ export class AuthService {
 
   constructor(
     private readonly jwt: JwtService,
-    @InjectModel(User.name) private readonly userModel: UserModel
-  ) { }
+    @InjectModel(User.name) private readonly userModel: UserModel,
+  ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     try {
+      if (!registerDto.email || typeof registerDto.email !== 'string') {
+        throw new BadRequestException('Email is required');
+      }
+
       // Normalize email to lowercase
       const normalizedEmail = registerDto.email.toLowerCase().trim();
-      
+      if (!normalizedEmail) {
+        throw new BadRequestException('Email is required');
+      }
+
       this.logger.log(`Registering user with email: ${normalizedEmail}`);
 
-      const existingUser = await this.userModel.findOne({ email: normalizedEmail });
+      const existingUser = await this.userModel.findOne({
+        email: normalizedEmail,
+      });
       if (existingUser) {
-        this.logger.warn(`Registration failed: Email ${normalizedEmail} already exists`);
+        this.logger.warn(
+          `Registration failed: Email ${normalizedEmail} already exists`,
+        );
         throw new ConflictException('User with this email already exists');
       }
 
@@ -51,8 +73,14 @@ export class AuthService {
       await user.save();
       this.logger.log(`User created successfully with ID: ${user._id}`);
 
-      const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
-      const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
+      const access_token = this.jwt.signAccess({
+        sub: user._id.toString(),
+        email: user.email,
+      });
+      const refresh_token = this.jwt.signRefresh({
+        sub: user._id.toString(),
+        email: user.email,
+      });
 
       const authResponse: AuthResponse = {
         access_token,
@@ -60,20 +88,30 @@ export class AuthService {
         user: {
           id: user._id.toString(),
           email: user.email,
-        }
+        },
       };
 
       return authResponse;
     } catch (error) {
-      this.logger.error('Registration failed', error instanceof Error ? error.stack : error);
+      this.logger.error(
+        'Registration failed',
+        error instanceof Error ? error.stack : error,
+      );
       throw error;
     }
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
+    if (!loginDto.email || typeof loginDto.email !== 'string') {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     // Normalize email to lowercase
     const normalizedEmail = loginDto.email.toLowerCase().trim();
-    
+    if (!normalizedEmail) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const user = await this.userModel.findOne({ email: normalizedEmail });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -87,8 +125,14 @@ export class AuthService {
     user.lastLoginAt = new Date();
     await user.save();
 
-    const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
-    const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
+    const access_token = this.jwt.signAccess({
+      sub: user._id.toString(),
+      email: user.email,
+    });
+    const refresh_token = this.jwt.signRefresh({
+      sub: user._id.toString(),
+      email: user.email,
+    });
 
     const authResponse: AuthResponse = {
       access_token,
@@ -96,7 +140,7 @@ export class AuthService {
       user: {
         id: user._id.toString(),
         email: user.email,
-      }
+      },
     };
 
     return authResponse;
@@ -108,21 +152,26 @@ export class AuthService {
       email: user.email,
       createdAt: (user as any).createdAt,
       lastLoginAt: user.lastLoginAt,
-    }
-
+    };
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
     try {
       const payload = this.jwt.verifyRefresh(refreshTokenDto.refresh_token);
       const user = await this.validateUser(payload.sub);
-      
+
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
 
-      const access_token = this.jwt.signAccess({ sub: user._id.toString(), email: user.email });
-      const refresh_token = this.jwt.signRefresh({ sub: user._id.toString(), email: user.email });
+      const access_token = this.jwt.signAccess({
+        sub: user._id.toString(),
+        email: user.email,
+      });
+      const refresh_token = this.jwt.signRefresh({
+        sub: user._id.toString(),
+        email: user.email,
+      });
 
       return {
         access_token,
@@ -130,7 +179,7 @@ export class AuthService {
         user: {
           id: user._id.toString(),
           email: user.email,
-        }
+        },
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');

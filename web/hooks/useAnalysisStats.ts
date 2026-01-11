@@ -33,5 +33,6 @@ export function useAnalysisStats(month: string) {
     refetch: () => refetch(),
     dailyAverageSpend: analysisStats?.dailyAverageSpend ?? 0,
     topCategories: analysisStats?.topCategories ?? [],
+    topExpenses: analysisStats?.topExpenses ?? [],
   };
 }

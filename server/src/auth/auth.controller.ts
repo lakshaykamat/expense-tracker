@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Logger, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { LoginDto, RegisterDto, RefreshTokenDto } from './auth.types';
+import { LoginDto, RegisterDto, RefreshTokenDto } from './auth.types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoggedInUser } from '../common/decorators/loggedin-user.decorator';
 import type { UserDocument } from './schemas/user.schema';

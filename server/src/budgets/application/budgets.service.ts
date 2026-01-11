@@ -32,6 +32,8 @@ import {
   prepareBudgetForUpdate,
 } from './utils/budgets.utils';
 
+const TOP_ITEMS_LIMIT = 5;
+
 @Injectable()
 export class BudgetsService {
   private repository: BudgetsRepository;
@@ -314,18 +316,20 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
-    const [budgetDoc, totalExpenses, categoryBreakdown] = await Promise.all([
-      this.repository.findByMonth(userId, month),
-      this.calculateSpentAmount(userId, month),
-      this.expensesService.getCategoryBreakdown(userId, month),
-    ]);
+    const [budgetDoc, totalExpenses, categoryBreakdown, topExpenses] =
+      await Promise.all([
+        this.repository.findByMonth(userId, month),
+        this.calculateSpentAmount(userId, month),
+        this.expensesService.getCategoryBreakdown(userId, month),
+        this.expensesService.getTopExpenses(userId, month, TOP_ITEMS_LIMIT),
+      ]);
 
     const daysForAverage = calculateDaysForAverage(month);
     const dailyAverageSpend = calculateDailyAverage(
       totalExpenses,
       daysForAverage,
     );
-    const topCategories = categoryBreakdown.slice(0, 5);
+    const topCategories = categoryBreakdown.slice(0, TOP_ITEMS_LIMIT);
 
     if (!budgetDoc) {
       return {
@@ -336,6 +340,7 @@ export class BudgetsService {
         budgetExists: false,
         dailyAverageSpend,
         topCategories,
+        topExpenses,
       };
     }
 
@@ -362,6 +367,7 @@ export class BudgetsService {
       budgetExists: true,
       dailyAverageSpend,
       topCategories,
+      topExpenses,
     };
   }
 }

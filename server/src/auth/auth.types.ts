@@ -2,7 +2,9 @@ import { IsEmail, IsString, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 const trimString = () =>
-  Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
+  Transform(({ value }) =>
+    typeof value === 'string' && value !== undefined ? value.trim() : value,
+  );
 
 export interface JwtPayload {
   sub: string;

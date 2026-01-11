@@ -232,7 +232,6 @@ export interface UseBudgetDialogReturn {
 export interface CategoryBreakdown {
   category: string;
   amount: number;
-  count: number;
 }
 
 export interface DailySpending {
@@ -249,4 +248,5 @@ export interface AnalysisStats {
   budgetExists: boolean;
   dailyAverageSpend: number;
   topCategories: CategoryBreakdown[];
+  topExpenses: Array<{ title: string; amount: number }>;
 }

@@ -149,7 +149,7 @@ export class ExpensesRepository {
     userId: string,
     startDate: Date,
     endDate: Date,
-  ): Promise<Array<{ category: string; amount: number; count: number }>> {
+  ): Promise<Array<{ category: string; amount: number }>> {
     const userIdQuery = buildUserIdQuery(userId);
     const result = await this.expenseModel
       .aggregate(getCategoryBreakdownPipeline(userIdQuery, startDate, endDate))
@@ -158,7 +158,31 @@ export class ExpensesRepository {
     return result.map((item) => ({
       category: item.category,
       amount: Number(item.amount) || 0,
-      count: Number(item.count) || 0,
+    }));
+  }
+
+  async getTopExpenses(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    limit: number = 5,
+  ): Promise<Array<{ title: string; amount: number }>> {
+    const userIdQuery = buildUserIdQuery(userId);
+    const expenses = await this.expenseModel
+      .find({
+        ...userIdQuery,
+        date: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      })
+      .sort({ amount: -1, date: -1 })
+      .limit(limit)
+      .lean();
+
+    return expenses.map((expense) => ({
+      title: expense.title,
+      amount: expense.amount,
     }));
   }
 }

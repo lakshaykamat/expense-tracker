@@ -9,6 +9,7 @@ import { ErrorDisplay } from "@/components/error-display";
 import { EmptyState } from "@/components/empty-state";
 import { BudgetOverviewCard } from "@/components/budget-overview-card";
 import { TopCategoriesCard } from "@/components/top-categories-card";
+import { TopExpensesCard } from "@/components/top-expenses-card";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default function AnalysisPage() {
     error: statsError,
     dailyAverageSpend,
     topCategories,
+    topExpenses,
     refetch,
   } = useAnalysisStats(selectedMonth);
 
@@ -118,6 +120,8 @@ export default function AnalysisPage() {
         />
 
         <TopCategoriesCard topCategories={topCategories} />
+
+        <TopExpensesCard topExpenses={topExpenses} />
       </div>
     </PageLayout>
   );

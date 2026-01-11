@@ -200,7 +200,7 @@ export class ExpensesService {
   async getCategoryBreakdown(
     userId: string,
     month: string,
-  ): Promise<Array<{ category: string; amount: number; count: number }>> {
+  ): Promise<Array<{ category: string; amount: number }>> {
     if (!isValidMonthFormat(month) || !isValidObjectId(userId)) {
       return [];
     }

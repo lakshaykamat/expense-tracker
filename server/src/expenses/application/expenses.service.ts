@@ -203,7 +203,7 @@ export class ExpensesService {
   async getCategoryBreakdown(
     userId: string,
     month: string,
-  ): Promise<Array<{ category: string; amount: number; count: number }>> {
+  ): Promise<Array<{ category: string; amount: number }>> {
     if (!isValidMonthFormat(month) || !isValidObjectId(userId)) {
       return [];
     }
@@ -211,6 +211,23 @@ export class ExpensesService {
     try {
       const { startDate, endDate } = getMonthDateRange(month);
       return this.repository.getCategoryBreakdown(userId, startDate, endDate);
+    } catch {
+      return [];
+    }
+  }
+
+  async getTopExpenses(
+    userId: string,
+    month: string,
+    limit: number = 5,
+  ): Promise<Array<{ title: string; amount: number }>> {
+    if (!isValidMonthFormat(month) || !isValidObjectId(userId)) {
+      return [];
+    }
+
+    try {
+      const { startDate, endDate } = getMonthDateRange(month);
+      return this.repository.getTopExpenses(userId, startDate, endDate, limit);
     } catch {
       return [];
     }
