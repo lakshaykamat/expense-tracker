@@ -47,17 +47,51 @@ export function prepareExpenseForCreate(
 }
 
 export function prepareExpenseForUpdate(dto: any): any {
-  const updateData: any = { ...dto };
+  const updateData: any = {};
+  const unsetFields: any = {};
 
   if (dto.title !== undefined) {
     updateData.title = trimString(dto.title) || '';
   }
-  if (dto.description !== undefined) {
-    updateData.description = trimString(dto.description);
+
+  // If description is not provided in the request, remove it
+  // If provided as null or empty string, also remove it
+  // If provided with a value, update it
+  if ('description' in dto) {
+    if (dto.description === null || dto.description === '') {
+      unsetFields.description = '';
+    } else {
+      const trimmed = trimString(dto.description);
+      if (trimmed === undefined || trimmed === '') {
+        unsetFields.description = '';
+      } else {
+        updateData.description = trimmed;
+      }
+    }
+  } else {
+    // Field not included in request - remove it
+    unsetFields.description = '';
   }
-  if (dto.category !== undefined) {
-    updateData.category = trimString(dto.category);
+
+  // If category is not provided in the request, remove it
+  // If provided as null or empty string, also remove it
+  // If provided with a value, update it
+  if ('category' in dto) {
+    if (dto.category === null || dto.category === '') {
+      unsetFields.category = '';
+    } else {
+      const trimmed = trimString(dto.category);
+      if (trimmed === undefined || trimmed === '') {
+        unsetFields.category = '';
+      } else {
+        updateData.category = trimmed;
+      }
+    }
+  } else {
+    // Field not included in request - remove it
+    unsetFields.category = '';
   }
+
   if (dto.date) {
     const date = normalizeDateToUTC(dto.date);
     if (isNaN(date.getTime())) {
@@ -65,8 +99,20 @@ export function prepareExpenseForUpdate(dto: any): any {
     }
     updateData.date = date;
   }
+  if (dto.amount !== undefined) {
+    updateData.amount = dto.amount;
+  }
 
-  return updateData;
+  // Combine $set and $unset operations
+  const result: any = {};
+  if (Object.keys(updateData).length > 0) {
+    result.$set = updateData;
+  }
+  if (Object.keys(unsetFields).length > 0) {
+    result.$unset = unsetFields;
+  }
+
+  return Object.keys(result).length > 0 ? result : updateData;
 }
 
 export function buildDailySpendingArray(
