@@ -5,6 +5,7 @@ import {
   CreateExpenseData, 
   UpdateExpenseData 
 } from '@/types'
+import { retryWithBackoff } from './retry-utils'
 
 export const expensesApi = {
   getAll: async (month?: string): Promise<ApiResponse<Expense[]>> => {
@@ -18,21 +19,17 @@ export const expensesApi = {
   },
   
   create: async (data: CreateExpenseData): Promise<ApiResponse<Expense>> => {
-    try {
+    return retryWithBackoff(async () => {
       const response = await api.post('/expenses', data)
       return response.data
-    } catch (error: any) {
-      throw error
-    }
+    })
   },
   
   update: async (id: string, data: UpdateExpenseData): Promise<ApiResponse<Expense>> => {
-    try {
+    return retryWithBackoff(async () => {
       const response = await api.patch(`/expenses/${id}`, data)
       return response.data
-    } catch (error: any) {
-      throw error
-    }
+    })
   },
   
   delete: async (id: string): Promise<ApiResponse<{ message: string }>> => {

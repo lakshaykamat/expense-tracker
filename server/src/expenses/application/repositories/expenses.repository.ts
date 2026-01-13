@@ -168,21 +168,49 @@ export class ExpensesRepository {
     limit: number = 5,
   ): Promise<Array<{ title: string; amount: number }>> {
     const userIdQuery = buildUserIdQuery(userId);
-    const expenses = await this.expenseModel
-      .find({
-        ...userIdQuery,
-        date: {
-          $gte: startDate,
-          $lte: endDate,
-        },
-      })
-      .sort({ amount: -1, date: -1 })
-      .limit(limit)
-      .lean();
 
-    return expenses.map((expense) => ({
-      title: expense.title,
-      amount: expense.amount,
+    // Group expenses by title and sum their amounts
+    const groupedExpenses = await this.expenseModel
+      .aggregate([
+        {
+          $match: {
+            ...userIdQuery,
+            date: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $addFields: {
+            trimmedTitle: { $trim: { input: '$title' } },
+          },
+        },
+        {
+          $group: {
+            _id: '$trimmedTitle',
+            amount: { $sum: '$amount' },
+          },
+        },
+        {
+          $sort: { amount: -1 },
+        },
+        {
+          $limit: limit,
+        },
+        {
+          $project: {
+            _id: 0,
+            title: '$_id',
+            amount: 1,
+          },
+        },
+      ])
+      .exec();
+
+    return groupedExpenses.map((expense) => ({
+      title: expense.title.trim(),
+      amount: Number(expense.amount) || 0,
     }));
   }
 }

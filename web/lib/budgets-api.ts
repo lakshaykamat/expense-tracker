@@ -7,6 +7,7 @@ import type {
   EssentialItem,
   AnalysisStats,
 } from "@/types";
+import { retryWithBackoff } from "./retry-utils";
 
 export const budgetsApi = {
   // Get budget by ID
@@ -22,11 +23,13 @@ export const budgetsApi = {
   },
 
   async update(id: string, data: UpdateBudgetData): Promise<Budget> {
-    const response = await api.patch<ApiResponse<Budget>>(
-      `/budgets/${id}`,
-      data
-    );
-    return response.data.data;
+    return retryWithBackoff(async () => {
+      const response = await api.patch<ApiResponse<Budget>>(
+        `/budgets/${id}`,
+        data
+      );
+      return response.data.data;
+    });
   },
 
   // Delete budget
