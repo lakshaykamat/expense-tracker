@@ -92,6 +92,7 @@ export const budgetsApi = {
         dailyAverageSpend: 0,
         topCategories: [],
         topExpenses: [],
+        weeklyExpenses: [],
       };
     }
     return response.data.data;
