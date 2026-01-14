@@ -34,5 +34,6 @@ export function useAnalysisStats(month: string) {
     dailyAverageSpend: analysisStats?.dailyAverageSpend ?? 0,
     topCategories: analysisStats?.topCategories ?? [],
     topExpenses: analysisStats?.topExpenses ?? [],
+    weeklyExpenses: analysisStats?.weeklyExpenses ?? [],
   };
 }

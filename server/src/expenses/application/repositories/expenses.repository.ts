@@ -213,4 +213,127 @@ export class ExpensesRepository {
       amount: Number(expense.amount) || 0,
     }));
   }
+
+  async getWeeklyExpenses(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<
+    Array<{ week: number; amount: number; startDate: string; endDate: string }>
+  > {
+    const userIdQuery = buildUserIdQuery(userId);
+
+    // Group expenses by actual calendar weeks using ISO week numbers (Monday-based)
+    const weeklyExpenses = await this.expenseModel
+      .aggregate([
+        {
+          $match: {
+            ...userIdQuery,
+            date: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $addFields: {
+            isoWeek: { $isoWeek: '$date' },
+          },
+        },
+        {
+          $group: {
+            _id: '$isoWeek',
+            amount: { $sum: '$amount' },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+        {
+          $project: {
+            _id: 0,
+            week: '$_id',
+            amount: 1,
+          },
+        },
+      ])
+      .exec();
+
+    // Get all weeks that occur in the month with date ranges
+    const weeksInMonth = this.getWeeksInMonthWithDates(startDate, endDate);
+    const expenseMap = new Map(
+      weeklyExpenses.map((item) => [Number(item.week), Number(item.amount)]),
+    );
+
+    // Return all weeks in the month with amounts (0 if no expenses) and date ranges
+    // Sort by start date instead of week number to handle year boundaries correctly
+    return weeksInMonth
+      .map((weekInfo) => ({
+        week: weekInfo.week,
+        amount: expenseMap.get(weekInfo.week) || 0,
+        startDate: weekInfo.startDate,
+        endDate: weekInfo.endDate,
+      }))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }
+
+  private getWeeksInMonthWithDates(
+    startDate: Date,
+    endDate: Date,
+  ): Array<{ week: number; startDate: string; endDate: string }> {
+    const weekMap = new Map<
+      number,
+      { week: number; startDate: Date; endDate: Date }
+    >();
+    const current = new Date(startDate);
+
+    while (current <= endDate) {
+      const isoWeek = this.getISOWeekNumber(current);
+      if (!weekMap.has(isoWeek)) {
+        // Get Monday (start) and Sunday (end) of this ISO week
+        const monday = this.getMondayOfWeek(current);
+        const sunday = this.getSundayOfWeek(current);
+        weekMap.set(isoWeek, {
+          week: isoWeek,
+          startDate: monday,
+          endDate: sunday,
+        });
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return Array.from(weekMap.values())
+      .map((item) => ({
+        week: item.week,
+        startDate: item.startDate.toISOString().split('T')[0],
+        endDate: item.endDate.toISOString().split('T')[0],
+      }))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }
+
+  private getMondayOfWeek(date: Date): Date {
+    const d = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+    const day = d.getUTCDay();
+    const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+  }
+
+  private getSundayOfWeek(date: Date): Date {
+    const monday = this.getMondayOfWeek(date);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(sunday.getUTCDate() + 6);
+    return sunday;
+  }
+
+  private getISOWeekNumber(date: Date): number {
+    const d = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
 }

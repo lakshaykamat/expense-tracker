@@ -161,6 +161,12 @@ export function SwipeableExpenseItem({
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
+            {new Date(expense.createdAt).toLocaleString("en-US", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })}{" "}
             {format(new Date(expense.date), "MMM d")}
             {expense.category && ` · ${expense.category.toUpperCase()}`}
           </p>

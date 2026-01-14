@@ -27,6 +27,12 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
           </p>
         )}
         <p className="text-xs text-muted-foreground mt-1">
+          {new Date(expense.createdAt).toLocaleString("en-US", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}{" "}
           {format(new Date(expense.date), "MMM d")}
           {expense.category && (
             <span className="ml-1"> · {expense.category.toUpperCase()}</span>
@@ -62,4 +68,3 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
     </div>
   );
 }
-

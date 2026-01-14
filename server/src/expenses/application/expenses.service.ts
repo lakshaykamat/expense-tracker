@@ -233,6 +233,22 @@ export class ExpensesService {
     }
   }
 
+  async getWeeklyExpenses(
+    userId: string,
+    month: string,
+  ): Promise<Array<{ week: number; amount: number }>> {
+    if (!isValidMonthFormat(month) || !isValidObjectId(userId)) {
+      return [];
+    }
+
+    try {
+      const { startDate, endDate } = getMonthDateRange(month);
+      return this.repository.getWeeklyExpenses(userId, startDate, endDate);
+    } catch {
+      return [];
+    }
+  }
+
   async findOne(id: string, userId: string) {
     if (!isValidObjectId(id) || !isValidObjectId(userId)) {
       throw new BadRequestException('Invalid ID format');

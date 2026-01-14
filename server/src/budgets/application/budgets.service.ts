@@ -316,12 +316,13 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
-    const [budgetDoc, totalExpenses, categoryBreakdown, topExpenses] =
+    const [budgetDoc, totalExpenses, categoryBreakdown, topExpenses, weeklyExpenses] =
       await Promise.all([
         this.repository.findByMonth(userId, month),
         this.calculateSpentAmount(userId, month),
         this.expensesService.getCategoryBreakdown(userId, month),
         this.expensesService.getTopExpenses(userId, month, TOP_ITEMS_LIMIT),
+        this.expensesService.getWeeklyExpenses(userId, month),
       ]);
 
     const daysForAverage = calculateDaysForAverage(month);
@@ -341,6 +342,7 @@ export class BudgetsService {
         dailyAverageSpend,
         topCategories,
         topExpenses,
+        weeklyExpenses,
       };
     }
 
@@ -368,6 +370,7 @@ export class BudgetsService {
       dailyAverageSpend,
       topCategories,
       topExpenses,
+      weeklyExpenses,
     };
   }
 }

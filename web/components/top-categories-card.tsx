@@ -14,7 +14,7 @@ export function TopCategoriesCard({ topCategories }: TopCategoriesCardProps) {
       <CardContent>
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-4">
-            Top Spending Categories
+            Top Categories
           </h3>
           {topCategories.length > 0 ? (
             <div className="space-y-3">

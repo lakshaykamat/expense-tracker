@@ -32,7 +32,7 @@ function isRetryableError(error: any): boolean {
   }
 
   // Timeout errors - always retry
-  if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+  if (error.code === "ECONNABORTED" || error.code === "ERR_NETWORK") {
     return true;
   }
 
@@ -42,7 +42,11 @@ function isRetryableError(error: any): boolean {
 /**
  * Calculates delay for exponential backoff
  */
-function calculateDelay(attempt: number, initialDelay: number, maxDelay: number): number {
+function calculateDelay(
+  attempt: number,
+  initialDelay: number,
+  maxDelay: number
+): number {
   const delay = initialDelay * Math.pow(2, attempt);
   return Math.min(delay, maxDelay);
 }
@@ -85,7 +89,11 @@ export async function retryWithBackoff<T>(
       }
 
       // Calculate delay and wait before retrying
-      const delay = calculateDelay(attempt, config.initialDelay, config.maxDelay);
+      const delay = calculateDelay(
+        attempt,
+        config.initialDelay,
+        config.maxDelay
+      );
       await sleep(delay);
     }
   }
@@ -93,4 +101,3 @@ export async function retryWithBackoff<T>(
   // All retries exhausted, throw the last error
   throw lastError;
 }
-

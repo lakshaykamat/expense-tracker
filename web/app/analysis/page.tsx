@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { BudgetOverviewCard } from "@/components/budget-overview-card";
 import { TopCategoriesCard } from "@/components/top-categories-card";
 import { TopExpensesCard } from "@/components/top-expenses-card";
+import { WeeklyExpensesCard } from "@/components/weekly-expenses-card";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default function AnalysisPage() {
     dailyAverageSpend,
     topCategories,
     topExpenses,
+    weeklyExpenses,
     refetch,
   } = useAnalysisStats(selectedMonth);
 
@@ -118,6 +120,8 @@ export default function AnalysisPage() {
           remainingBudget={remainingBudget}
           dailyAverageSpend={dailyAverageSpend}
         />
+
+        <WeeklyExpensesCard weeklyExpenses={weeklyExpenses} selectedMonth={selectedMonth} />
 
         <TopCategoriesCard topCategories={topCategories} />
 

@@ -249,4 +249,5 @@ export interface AnalysisStats {
   dailyAverageSpend: number;
   topCategories: CategoryBreakdown[];
   topExpenses: Array<{ title: string; amount: number }>;
+  weeklyExpenses: Array<{ week: number; amount: number; startDate: string; endDate: string }>;
 }
