@@ -77,27 +77,67 @@ export function useExpenses(month?: string): UseExpensesReturn {
   );
 
   const addExpense = async (data: CreateExpenseData) => {
+    const currentMonth = month || getCurrentMonth();
+    const expenseMonth = data.date ? getMonthFromDate(data.date) : currentMonth;
+    const expenseKey = swrKeys.expenses.all(expenseMonth);
+
+    // Create temporary expense for optimistic update
+    const tempExpense: Expense = {
+      _id: `temp-${Date.now()}`,
+      title: data.title,
+      amount: data.amount,
+      description: data.description,
+      category: data.category,
+      date: data.date || new Date().toISOString(),
+      userId: "", // Will be replaced by server response
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
+      // Optimistically add expense to UI immediately
+      await mutate(
+        expenseKey,
+        async (currentExpenses: Expense[] = []) => {
+          // Insert expense in sorted order (newest first based on date)
+          const newExpenses = [...currentExpenses, tempExpense].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          return newExpenses;
+        },
+        {
+          optimisticData: (currentExpenses: Expense[] = []) => {
+            const newExpenses = [...currentExpenses, tempExpense].sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            return newExpenses;
+          },
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
+
+      // Invalidate related caches optimistically
+      await mutate(swrKeys.analysis.stats(expenseMonth));
+      await mutate(swrKeys.budgets.byMonth(expenseMonth));
+
+      // Call mutation - SWR will update cache with server response via revalidation
       const newExpense = await createExpense(data);
 
-      // Invalidate and refetch relevant caches
-      const currentMonth = month || getCurrentMonth();
-      
-      // Invalidate the expense's date month
-      if (data.date) {
-        const expenseMonth = getMonthFromDate(data.date);
-        await mutate(swrKeys.expenses.all(expenseMonth));
-        await mutate(swrKeys.analysis.stats(expenseMonth));
-        await mutate(swrKeys.budgets.byMonth(expenseMonth));
-      } else {
-        // If no date provided, default to current month
-        await mutate(swrKeys.expenses.all(currentMonth));
-        await mutate(swrKeys.analysis.stats(currentMonth));
-        await mutate(swrKeys.budgets.byMonth(currentMonth));
-      }
+      // Replace temp expense with server response
+      await mutate(
+        expenseKey,
+        async (currentExpenses: Expense[] = []) => {
+          return currentExpenses.map((exp) =>
+            exp._id === tempExpense._id ? newExpense : exp
+          );
+        },
+        { revalidate: false }
+      );
 
       return { success: true };
     } catch (error: any) {
+      // SWR will automatically rollback on error
       return {
         success: false,
         error: extractErrorMessage(error, "Failed to create expense"),
@@ -106,40 +146,123 @@ export function useExpenses(month?: string): UseExpensesReturn {
   };
 
   const updateExpenseHandler = async (id: string, data: CreateExpenseData) => {
+    const currentMonth = month || getCurrentMonth();
+    const oldExpense = expenses.find((e) => e._id === id);
+    const oldExpenseMonth = oldExpense ? getMonthFromDate(oldExpense.date) : currentMonth;
+    const newExpenseMonth = data.date ? getMonthFromDate(data.date) : oldExpenseMonth;
+
+    const oldExpenseKey = swrKeys.expenses.all(oldExpenseMonth);
+    const newExpenseKey = swrKeys.expenses.all(newExpenseMonth);
+
+    if (!oldExpense) {
+      return { success: false, error: "Expense not found" };
+    }
+
+    // Create optimistic updated expense
+    const optimisticExpense: Expense = {
+      ...oldExpense,
+      ...data,
+      date: data.date || oldExpense.date,
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      await updateExpense({ id, data });
+      // If month changed, optimistically move expense between arrays
+      if (oldExpenseMonth !== newExpenseMonth) {
+        // Remove from old month optimistically
+        await mutate(
+          oldExpenseKey,
+          async (currentExpenses: Expense[] = []) => {
+            return currentExpenses.filter((exp) => exp._id !== id);
+          },
+          {
+            optimisticData: (currentExpenses: Expense[] = []) =>
+              currentExpenses.filter((exp) => exp._id !== id),
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
 
-      // Invalidate relevant caches
-      const currentMonth = month || getCurrentMonth();
-      await mutate(swrKeys.expenses.all(currentMonth));
-      await mutate(swrKeys.analysis.stats(currentMonth));
-      await mutate(swrKeys.budgets.byMonth(currentMonth));
+        // Add to new month optimistically
+        await mutate(
+          newExpenseKey,
+          async (currentExpenses: Expense[] = []) => {
+            const newExpenses = [...currentExpenses, optimisticExpense].sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            return newExpenses;
+          },
+          {
+            optimisticData: (currentExpenses: Expense[] = []) => {
+              const newExpenses = [...currentExpenses, optimisticExpense].sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              return newExpenses;
+            },
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
 
-      // Invalidate the expense's date month if different from current month
-      // This handles cases where the expense date was changed to a different month
-      if (data.date) {
-        const expenseMonth = getMonthFromDate(data.date);
-        if (expenseMonth !== currentMonth) {
-          await mutate(swrKeys.expenses.all(expenseMonth));
-          await mutate(swrKeys.analysis.stats(expenseMonth));
-          await mutate(swrKeys.budgets.byMonth(expenseMonth));
-        }
+        // Invalidate related caches for both months
+        await mutate(swrKeys.analysis.stats(oldExpenseMonth));
+        await mutate(swrKeys.budgets.byMonth(oldExpenseMonth));
+        await mutate(swrKeys.analysis.stats(newExpenseMonth));
+        await mutate(swrKeys.budgets.byMonth(newExpenseMonth));
+      } else {
+        // Same month - just update optimistically
+        await mutate(
+          oldExpenseKey,
+          async (currentExpenses: Expense[] = []) => {
+            return currentExpenses.map((exp) =>
+              exp._id === id ? optimisticExpense : exp
+            );
+          },
+          {
+            optimisticData: (currentExpenses: Expense[] = []) =>
+              currentExpenses.map((exp) =>
+                exp._id === id ? optimisticExpense : exp
+              ),
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
+
+        // Invalidate related caches
+        await mutate(swrKeys.analysis.stats(newExpenseMonth));
+        await mutate(swrKeys.budgets.byMonth(newExpenseMonth));
       }
 
-      // Also invalidate the old expense's month if we can find it in current expenses
-      // This handles cases where expense was moved from one month to another
-      const oldExpense = expenses.find((e) => e._id === id);
-      if (oldExpense) {
-        const oldExpenseMonth = getMonthFromDate(oldExpense.date);
-        if (oldExpenseMonth !== currentMonth && oldExpenseMonth !== (data.date ? getMonthFromDate(data.date) : currentMonth)) {
-          await mutate(swrKeys.expenses.all(oldExpenseMonth));
-          await mutate(swrKeys.analysis.stats(oldExpenseMonth));
-          await mutate(swrKeys.budgets.byMonth(oldExpenseMonth));
-        }
+      // Call mutation - SWR will update cache with server response via revalidation
+      const updatedExpense = await updateExpense({ id, data });
+
+      // Update cache with server response (replace optimistic data)
+      if (oldExpenseMonth !== newExpenseMonth) {
+        await mutate(newExpenseKey, async (currentExpenses: Expense[] = []) => {
+          // Remove temp or old expense, add updated expense
+          const filtered = currentExpenses.filter(
+            (exp) => exp._id !== id && exp._id !== optimisticExpense._id
+          );
+          const newExpenses = [...filtered, updatedExpense].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          return newExpenses;
+        }, { revalidate: false });
+      } else {
+        await mutate(oldExpenseKey, async (currentExpenses: Expense[] = []) => {
+          return currentExpenses.map((exp) =>
+            exp._id === id ? updatedExpense : exp
+          );
+        }, { revalidate: false });
       }
 
       return { success: true };
     } catch (error: any) {
+      // SWR will automatically rollback on error
+      await mutate(oldExpenseKey);
+      if (oldExpenseMonth !== newExpenseMonth) {
+        await mutate(newExpenseKey);
+      }
       return {
         success: false,
         error: extractErrorMessage(error, "Failed to update expense"),
@@ -148,28 +271,41 @@ export function useExpenses(month?: string): UseExpensesReturn {
   };
 
   const deleteExpenseHandler = async (id: string) => {
-    try {
-      // Get the expense's month before deleting (if available in current expenses)
-      const expenseToDelete = expenses.find((e) => e._id === id);
-      const expenseMonth = expenseToDelete ? getMonthFromDate(expenseToDelete.date) : null;
+    const expenseToDelete = expenses.find((e) => e._id === id);
+    if (!expenseToDelete) {
+      return { success: false, error: "Expense not found" };
+    }
 
+    const expenseMonth = getMonthFromDate(expenseToDelete.date);
+    const expenseKey = swrKeys.expenses.all(expenseMonth);
+
+    try {
+      // Optimistically remove expense from UI immediately
+      await mutate(
+        expenseKey,
+        async (currentExpenses: Expense[] = []) => {
+          return currentExpenses.filter((exp) => exp._id !== id);
+        },
+        {
+          optimisticData: (currentExpenses: Expense[] = []) =>
+            currentExpenses.filter((exp) => exp._id !== id),
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
+
+      // Invalidate related caches optimistically
+      await mutate(swrKeys.analysis.stats(expenseMonth));
+      await mutate(swrKeys.budgets.byMonth(expenseMonth));
+
+      // Call deletion mutation in background
       await deleteExpense(id);
 
-      // Invalidate relevant caches
-      const currentMonth = month || getCurrentMonth();
-      await mutate(swrKeys.expenses.all(currentMonth));
-      await mutate(swrKeys.analysis.stats(currentMonth));
-      await mutate(swrKeys.budgets.byMonth(currentMonth));
-
-      // Also invalidate the expense's original month if different from current month
-      if (expenseMonth && expenseMonth !== currentMonth) {
-        await mutate(swrKeys.expenses.all(expenseMonth));
-        await mutate(swrKeys.analysis.stats(expenseMonth));
-        await mutate(swrKeys.budgets.byMonth(expenseMonth));
-      }
-
+      // Cache will be updated by SWR revalidation
       return { success: true };
     } catch (error: any) {
+      // SWR will automatically rollback on error
+      await mutate(expenseKey);
       return {
         success: false,
         error: extractErrorMessage(error, "Failed to delete expense"),

@@ -75,86 +75,244 @@ export function useBudgets(month?: string): UseBudgetsReturn {
   );
 
   const addBudget = async (data: CreateBudgetData) => {
+    if (!data.month) {
+      return { success: false, error: "Month is required" };
+    }
+
+    const budgetKey = swrKeys.budgets.byMonth(data.month);
+
+    // Create temporary budget for optimistic update
+    const tempBudget: Budget = {
+      _id: `temp-${Date.now()}`,
+      userId: "",
+      month: data.month,
+      essentialItems: data.essentialItems || [],
+      totalBudget: data.essentialItems
+        ? data.essentialItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+        : 0,
+      spentAmount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      await createBudget(data);
+      // Optimistically set budget immediately
+      await mutate(
+        budgetKey,
+        async () => {
+          return tempBudget;
+        },
+        {
+          optimisticData: tempBudget,
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
 
-      // Invalidate and refetch relevant caches
-      if (data.month) {
-        await mutate(swrKeys.budgets.byMonth(data.month));
-      }
-      if (monthToUse && data.month === monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(monthToUse));
-      }
+      // Invalidate analysis stats optimistically
+      await mutate(swrKeys.analysis.stats(data.month));
 
-      // Invalidate analysis stats
-      if (data.month) {
-        await mutate(swrKeys.analysis.stats(data.month));
-      }
-      
+      // Call mutation in background - SWR will update cache with server response
+      const newBudget = await createBudget(data);
+
+      // Replace temp budget with server response
+      await mutate(
+        budgetKey,
+        async () => {
+          return newBudget;
+        },
+        { revalidate: false }
+      );
+
       return { success: true };
     } catch (err: any) {
+      // SWR will automatically rollback on error
+      await mutate(budgetKey);
       const errorMessage = extractErrorMessage(err, "Failed to create budget");
       return { success: false, error: errorMessage };
     }
   };
 
   const updateBudgetHandler = async (id: string, data: UpdateBudgetData) => {
+    if (!currentBudget) {
+      return { success: false, error: "Budget not found" };
+    }
+
+    const oldBudgetMonth = currentBudget.month;
+    const newBudgetMonth = data.month || oldBudgetMonth;
+
+    const oldBudgetKey = swrKeys.budgets.byMonth(oldBudgetMonth);
+    const newBudgetKey = swrKeys.budgets.byMonth(newBudgetMonth);
+
+    // Create optimistic updated budget
+    const optimisticBudget: Budget = {
+      ...currentBudget,
+      ...data,
+      month: newBudgetMonth,
+      essentialItems: data.essentialItems ?? currentBudget.essentialItems,
+      totalBudget: data.essentialItems
+        ? data.essentialItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+        : currentBudget.totalBudget,
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      await updateBudget({ id, data });
+      // If month changed, optimistically move budget between caches
+      if (oldBudgetMonth !== newBudgetMonth) {
+        // Clear old month optimistically
+        await mutate(
+          oldBudgetKey,
+          async () => {
+            return null;
+          },
+          {
+            optimisticData: null,
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
 
-      // Invalidate and refetch relevant caches
-      if (monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(monthToUse));
-      }
-      // Invalidate the month that was updated if different
-      if (data.month && data.month !== monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(data.month));
+        // Set new month optimistically
+        await mutate(
+          newBudgetKey,
+          async () => {
+            return optimisticBudget;
+          },
+          {
+            optimisticData: optimisticBudget,
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
+
+        // Invalidate analysis stats for both months
+        await mutate(swrKeys.analysis.stats(oldBudgetMonth));
+        await mutate(swrKeys.analysis.stats(newBudgetMonth));
+      } else {
+        // Same month - just update optimistically
+        await mutate(
+          oldBudgetKey,
+          async () => {
+            return optimisticBudget;
+          },
+          {
+            optimisticData: optimisticBudget,
+            revalidate: true,
+            rollbackOnError: true,
+          }
+        );
+
+        // Invalidate analysis stats
+        await mutate(swrKeys.analysis.stats(newBudgetMonth));
       }
 
-      // Invalidate analysis stats if month changed
-      if (data.month) {
-        await mutate(swrKeys.analysis.stats(data.month));
+      // Call mutation in background
+      const updatedBudget = await updateBudget({ id, data });
+
+      // Update cache with server response
+      if (oldBudgetMonth !== newBudgetMonth) {
+        await mutate(newBudgetKey, async () => updatedBudget, {
+          revalidate: false,
+        });
+      } else {
+        await mutate(oldBudgetKey, async () => updatedBudget, {
+          revalidate: false,
+        });
       }
 
       return { success: true };
     } catch (err: any) {
+      // SWR will automatically rollback on error
+      await mutate(oldBudgetKey);
+      if (oldBudgetMonth !== newBudgetMonth) {
+        await mutate(newBudgetKey);
+      }
       const errorMessage = extractErrorMessage(err, "Failed to update budget");
       return { success: false, error: errorMessage };
     }
   };
 
   const deleteBudgetHandler = async (id: string) => {
+    if (!currentBudget || currentBudget._id !== id) {
+      return { success: false, error: "Budget not found" };
+    }
+
+    const budgetMonth = currentBudget.month;
+    const budgetKey = swrKeys.budgets.byMonth(budgetMonth);
+
     try {
+      // Optimistically clear budget immediately
+      await mutate(
+        budgetKey,
+        async () => {
+          return null;
+        },
+        {
+          optimisticData: null,
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
+
+      // Invalidate analysis stats optimistically
+      await mutate(swrKeys.analysis.stats(budgetMonth));
+
+      // Call deletion mutation in background
       await deleteBudget(id);
 
-      // Invalidate and refetch relevant caches
-      if (monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(monthToUse));
-      }
-      // Invalidate analysis stats for the month
-      if (monthToUse) {
-        await mutate(swrKeys.analysis.stats(monthToUse));
-      }
-
+      // Cache will be updated by SWR revalidation
       return { success: true };
     } catch (err: any) {
+      // SWR will automatically rollback on error
+      await mutate(budgetKey);
       const errorMessage = extractErrorMessage(err, "Failed to delete budget");
       return { success: false, error: errorMessage };
     }
   };
 
   const addEssentialItem = async (budgetId: string, item: EssentialItem) => {
-    try {
-      await addEssentialItemMutation({ budgetId, item });
+    if (!currentBudget || currentBudget._id !== budgetId) {
+      return { success: false, error: "Budget not found" };
+    }
 
-      // Invalidate and refetch relevant caches
-      if (monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(monthToUse));
-        await mutate(swrKeys.analysis.stats(monthToUse));
-      }
+    const budgetKey = swrKeys.budgets.byMonth(currentBudget.month);
+
+    // Create optimistic updated budget with new item
+    const optimisticBudget: Budget = {
+      ...currentBudget,
+      essentialItems: [...currentBudget.essentialItems, item],
+      totalBudget:
+        currentBudget.totalBudget + (item.amount || 0),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      // Optimistically update budget immediately
+      await mutate(
+        budgetKey,
+        async () => {
+          return optimisticBudget;
+        },
+        {
+          optimisticData: optimisticBudget,
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
+
+      // Invalidate analysis stats optimistically
+      await mutate(swrKeys.analysis.stats(currentBudget.month));
+
+      // Call mutation in background
+      const updatedBudget = await addEssentialItemMutation({ budgetId, item });
+
+      // Update cache with server response
+      await mutate(budgetKey, async () => updatedBudget, { revalidate: false });
 
       return { success: true };
     } catch (err: any) {
+      // SWR will automatically rollback on error
+      await mutate(budgetKey);
       const errorMessage = extractErrorMessage(
         err,
         "Failed to add essential item"
@@ -164,17 +322,54 @@ export function useBudgets(month?: string): UseBudgetsReturn {
   };
 
   const removeEssentialItem = async (budgetId: string, itemName: string) => {
+    if (!currentBudget || currentBudget._id !== budgetId) {
+      return { success: false, error: "Budget not found" };
+    }
+
+    const itemToRemove = currentBudget.essentialItems.find(
+      (item) => item.name === itemName
+    );
+    if (!itemToRemove) {
+      return { success: false, error: "Item not found" };
+    }
+
+    const budgetKey = swrKeys.budgets.byMonth(currentBudget.month);
+
+    // Create optimistic updated budget without the item
+    const optimisticBudget: Budget = {
+      ...currentBudget,
+      essentialItems: currentBudget.essentialItems.filter(
+        (item) => item.name !== itemName
+      ),
+      totalBudget: currentBudget.totalBudget - (itemToRemove.amount || 0),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
+      // Optimistically update budget immediately
+      await mutate(
+        budgetKey,
+        async () => {
+          return optimisticBudget;
+        },
+        {
+          optimisticData: optimisticBudget,
+          revalidate: true,
+          rollbackOnError: true,
+        }
+      );
+
+      // Invalidate analysis stats optimistically
+      await mutate(swrKeys.analysis.stats(currentBudget.month));
+
+      // Call mutation in background
       await removeEssentialItemMutation({ budgetId, itemName });
 
-      // Invalidate and refetch relevant caches
-      if (monthToUse) {
-        await mutate(swrKeys.budgets.byMonth(monthToUse));
-        await mutate(swrKeys.analysis.stats(monthToUse));
-      }
-
+      // Cache will be updated by SWR revalidation
       return { success: true };
     } catch (err: any) {
+      // SWR will automatically rollback on error
+      await mutate(budgetKey);
       const errorMessage = extractErrorMessage(
         err,
         "Failed to remove essential item"
