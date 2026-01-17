@@ -77,8 +77,8 @@ export function useExpenses(month?: string): UseExpensesReturn {
   );
 
   const addExpense = async (data: CreateExpenseData) => {
-    const currentMonth = month || getCurrentMonth();
-    const expenseMonth = data.date ? getMonthFromDate(data.date) : currentMonth;
+    // Use the same month logic as the hook
+    const expenseMonth = data.date ? getMonthFromDate(data.date) : monthToUse;
     const expenseKey = swrKeys.expenses.all(expenseMonth);
 
     // Create temporary expense for optimistic update
@@ -95,49 +95,64 @@ export function useExpenses(month?: string): UseExpensesReturn {
     };
 
     try {
-      // Optimistically add expense to UI immediately
-      await mutate(
+      // Get current expenses from hook if viewing the same month, otherwise empty array
+      const currentExpensesForMonth = expenseMonth === monthToUse ? expenses : [];
+
+      // Create optimistic expenses array (sorted newest first)
+      const optimisticExpenses = [...currentExpensesForMonth, tempExpense].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      // Optimistically update UI immediately (synchronous, fire and forget)
+      // Use updater function to get current cache data and merge with optimistic data
+      mutate(
         expenseKey,
-        async (currentExpenses: Expense[] = []) => {
-          // Insert expense in sorted order (newest first based on date)
-          const newExpenses = [...currentExpenses, tempExpense].sort(
+        async (currentExpenses: Expense[] | undefined) => {
+          // Use cache data if available, otherwise use hook's expenses if viewing same month
+          const expensesList = currentExpenses ?? currentExpensesForMonth;
+          const newExpenses = [...expensesList, tempExpense].sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
           return newExpenses;
         },
         {
-          optimisticData: (currentExpenses: Expense[] = []) => {
-            const newExpenses = [...currentExpenses, tempExpense].sort(
+          // Optimistic data function - called immediately for instant UI update
+          optimisticData: (currentExpenses: Expense[] | undefined) => {
+            // If cache has data, use it; otherwise use hook's expenses if same month
+            const expensesList = currentExpenses ?? currentExpensesForMonth;
+            const newExpenses = [...expensesList, tempExpense].sort(
               (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
             );
             return newExpenses;
           },
-          revalidate: true,
-          rollbackOnError: true,
+          revalidate: false, // Don't revalidate yet, wait for server response
+          rollbackOnError: true, // Rollback if mutation fails
         }
       );
 
-      // Invalidate related caches optimistically
-      await mutate(swrKeys.analysis.stats(expenseMonth));
-      await mutate(swrKeys.budgets.byMonth(expenseMonth));
+      // Invalidate related caches (fire and forget)
+      mutate(swrKeys.analysis.stats(expenseMonth));
+      mutate(swrKeys.budgets.byMonth(expenseMonth));
 
-      // Call mutation - SWR will update cache with server response via revalidation
+      // Call mutation in background
       const newExpense = await createExpense(data);
 
       // Replace temp expense with server response
       await mutate(
         expenseKey,
-        async (currentExpenses: Expense[] = []) => {
-          return currentExpenses.map((exp) =>
+        async (currentExpenses: Expense[] | undefined) => {
+          const expensesList = currentExpenses || [];
+          return expensesList.map((exp) =>
             exp._id === tempExpense._id ? newExpense : exp
           );
         },
-        { revalidate: false }
+        { revalidate: true }
       );
 
       return { success: true };
     } catch (error: any) {
-      // SWR will automatically rollback on error
+      // Rollback on error - SWR will automatically rollback, but we ensure it
+      await mutate(expenseKey);
       return {
         success: false,
         error: extractErrorMessage(error, "Failed to create expense"),
@@ -279,32 +294,43 @@ export function useExpenses(month?: string): UseExpensesReturn {
     const expenseMonth = getMonthFromDate(expenseToDelete.date);
     const expenseKey = swrKeys.expenses.all(expenseMonth);
 
+    // Get current expenses from hook if viewing the same month
+    const currentExpensesForMonth = expenseMonth === monthToUse ? expenses : [];
+
     try {
-      // Optimistically remove expense from UI immediately
-      await mutate(
+      // Optimistically remove expense from UI immediately (synchronous, fire and forget)
+      mutate(
         expenseKey,
-        async (currentExpenses: Expense[] = []) => {
-          return currentExpenses.filter((exp) => exp._id !== id);
+        async (currentExpenses: Expense[] | undefined) => {
+          // Use cache data if available, otherwise use hook's expenses if viewing same month
+          const expensesList = currentExpenses ?? currentExpensesForMonth;
+          return expensesList.filter((exp) => exp._id !== id);
         },
         {
-          optimisticData: (currentExpenses: Expense[] = []) =>
-            currentExpenses.filter((exp) => exp._id !== id),
-          revalidate: true,
-          rollbackOnError: true,
+          // Optimistic data function - called immediately for instant UI update
+          optimisticData: (currentExpenses: Expense[] | undefined) => {
+            // If cache has data, use it; otherwise use hook's expenses if same month
+            const expensesList = currentExpenses ?? currentExpensesForMonth;
+            return expensesList.filter((exp) => exp._id !== id);
+          },
+          revalidate: false, // Don't revalidate yet, wait for server response
+          rollbackOnError: true, // Rollback if mutation fails
         }
       );
 
-      // Invalidate related caches optimistically
-      await mutate(swrKeys.analysis.stats(expenseMonth));
-      await mutate(swrKeys.budgets.byMonth(expenseMonth));
+      // Invalidate related caches (fire and forget)
+      mutate(swrKeys.analysis.stats(expenseMonth));
+      mutate(swrKeys.budgets.byMonth(expenseMonth));
 
       // Call deletion mutation in background
       await deleteExpense(id);
 
-      // Cache will be updated by SWR revalidation
+      // Trigger revalidation after successful deletion
+      await mutate(expenseKey);
+
       return { success: true };
     } catch (error: any) {
-      // SWR will automatically rollback on error
+      // Rollback on error - revert to original state
       await mutate(expenseKey);
       return {
         success: false,
