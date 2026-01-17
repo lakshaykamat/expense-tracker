@@ -13,6 +13,7 @@ import {
 import { swrKeys } from "@/lib/swr-config";
 import { swrFetcher } from "@/lib/swr-fetcher";
 import { mutate } from "swr";
+import { getMonthFromDate } from "@/utils/date.utils";
 
 export function useExpenses(month?: string): UseExpensesReturn {
   const monthToUse = month || getCurrentMonth();
@@ -81,15 +82,19 @@ export function useExpenses(month?: string): UseExpensesReturn {
 
       // Invalidate and refetch relevant caches
       const currentMonth = month || getCurrentMonth();
-        if (shouldIncludeInCurrentMonth(data.date, currentMonth)) {
+      
+      // Invalidate the expense's date month
+      if (data.date) {
+        const expenseMonth = getMonthFromDate(data.date);
+        await mutate(swrKeys.expenses.all(expenseMonth));
+        await mutate(swrKeys.analysis.stats(expenseMonth));
+        await mutate(swrKeys.budgets.byMonth(expenseMonth));
+      } else {
+        // If no date provided, default to current month
         await mutate(swrKeys.expenses.all(currentMonth));
+        await mutate(swrKeys.analysis.stats(currentMonth));
+        await mutate(swrKeys.budgets.byMonth(currentMonth));
       }
-
-      // Invalidate analysis stats for the month
-      await mutate(swrKeys.analysis.stats(currentMonth));
-
-      // Invalidate budgets to update spent amounts
-      await mutate(swrKeys.budgets.byMonth(currentMonth));
 
       return { success: true };
     } catch (error: any) {
@@ -110,6 +115,29 @@ export function useExpenses(month?: string): UseExpensesReturn {
       await mutate(swrKeys.analysis.stats(currentMonth));
       await mutate(swrKeys.budgets.byMonth(currentMonth));
 
+      // Invalidate the expense's date month if different from current month
+      // This handles cases where the expense date was changed to a different month
+      if (data.date) {
+        const expenseMonth = getMonthFromDate(data.date);
+        if (expenseMonth !== currentMonth) {
+          await mutate(swrKeys.expenses.all(expenseMonth));
+          await mutate(swrKeys.analysis.stats(expenseMonth));
+          await mutate(swrKeys.budgets.byMonth(expenseMonth));
+        }
+      }
+
+      // Also invalidate the old expense's month if we can find it in current expenses
+      // This handles cases where expense was moved from one month to another
+      const oldExpense = expenses.find((e) => e._id === id);
+      if (oldExpense) {
+        const oldExpenseMonth = getMonthFromDate(oldExpense.date);
+        if (oldExpenseMonth !== currentMonth && oldExpenseMonth !== (data.date ? getMonthFromDate(data.date) : currentMonth)) {
+          await mutate(swrKeys.expenses.all(oldExpenseMonth));
+          await mutate(swrKeys.analysis.stats(oldExpenseMonth));
+          await mutate(swrKeys.budgets.byMonth(oldExpenseMonth));
+        }
+      }
+
       return { success: true };
     } catch (error: any) {
       return {
@@ -121,6 +149,10 @@ export function useExpenses(month?: string): UseExpensesReturn {
 
   const deleteExpenseHandler = async (id: string) => {
     try {
+      // Get the expense's month before deleting (if available in current expenses)
+      const expenseToDelete = expenses.find((e) => e._id === id);
+      const expenseMonth = expenseToDelete ? getMonthFromDate(expenseToDelete.date) : null;
+
       await deleteExpense(id);
 
       // Invalidate relevant caches
@@ -128,6 +160,13 @@ export function useExpenses(month?: string): UseExpensesReturn {
       await mutate(swrKeys.expenses.all(currentMonth));
       await mutate(swrKeys.analysis.stats(currentMonth));
       await mutate(swrKeys.budgets.byMonth(currentMonth));
+
+      // Also invalidate the expense's original month if different from current month
+      if (expenseMonth && expenseMonth !== currentMonth) {
+        await mutate(swrKeys.expenses.all(expenseMonth));
+        await mutate(swrKeys.analysis.stats(expenseMonth));
+        await mutate(swrKeys.budgets.byMonth(expenseMonth));
+      }
 
       return { success: true };
     } catch (error: any) {
