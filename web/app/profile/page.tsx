@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { PageLayout } from '@/components/page-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import { ErrorDisplay } from '@/components/error-display'
+import { ProfileSkeleton } from '@/components/profile-skeleton'
+import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { AuthService } from '@/lib/auth-service'
 import { usersApi } from '@/lib/users-api'
-import { formatDate } from '@/utils/date.utils'
-import { LogOut, Mail, Calendar, Download } from 'lucide-react'
+import { LogOut, Mail, Download } from 'lucide-react'
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +53,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center w-full" style={{ minHeight: 'calc(100vh - 8rem)' }}>
-          <Spinner size="lg" />
-        </div>
+        <ProfileSkeleton />
       </PageLayout>
     )
   }
@@ -86,31 +84,13 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="p-6">
           <div className="space-y-6">
-            <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="flex items-center gap-3">
+              <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-muted-foreground mb-1">Email</div>
+                <div className="text-sm text-muted-foreground mb-1">Email</div>
                 <div className="text-base text-foreground break-words">{user.email}</div>
               </div>
             </div>
-
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-muted-foreground mb-1">Member Since</div>
-                <div className="text-base text-foreground">{formatDate(user.createdAt)}</div>
-              </div>
-            </div>
-
-            {user.lastLoginAt && (
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Last Login</div>
-                  <div className="text-base text-foreground">{formatDate(user.lastLoginAt)}</div>
-                </div>
-              </div>
-            )}
 
             <div className="pt-4 border-t border-border space-y-3">
               <Button
@@ -127,7 +107,7 @@ export default function ProfilePage() {
                 ) : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    Export Data to CSV
+                    Export
                   </>
                 )}
               </Button>

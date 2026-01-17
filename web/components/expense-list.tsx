@@ -2,8 +2,8 @@
 
 import { Expense } from "@/types";
 import { PageHeader } from "./page-header";
-import { Spinner } from "./ui/spinner";
 import { EmptyState } from "./empty-state";
+import { ExpenseListSkeleton } from "./expense-list-skeleton";
 import { ErrorDisplay } from "./error-display";
 import { SwipeableExpenseItem } from "./swipeable-expense-item";
 import { ExpenseItem } from "./expense-item";
@@ -35,9 +35,7 @@ export function ExpenseList({
 }: ExpenseListProps) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Spinner size="lg" />
-      </div>
+      <ExpenseListSkeleton />
     );
   }
 

@@ -6,15 +6,13 @@ import { UseExpenseDialogReturn } from "@/types";
 interface UseExpenseHandlersOptions {
   expenses: UseExpensesReturn;
   dialog: UseExpenseDialogReturn;
-  selectedMonth: string;
 }
 
 export function useExpenseHandlers({
   expenses,
   dialog,
-  selectedMonth,
 }: UseExpenseHandlersOptions) {
-  const { addExpense, updateExpense, deleteExpense, fetchExpenses } = expenses;
+  const { addExpense, updateExpense, deleteExpense } = expenses;
   const { closeDialog } = dialog;
 
   const handleAddExpense = useCallback(
@@ -22,10 +20,10 @@ export function useExpenseHandlers({
       const result = await addExpense(data);
       if (result.success) {
         closeDialog();
-        fetchExpenses(selectedMonth);
+        // Cache is already invalidated by addExpense, SWR will refetch in background
       }
     },
-    [addExpense, closeDialog, fetchExpenses, selectedMonth]
+    [addExpense, closeDialog]
   );
 
   const handleUpdateExpense = useCallback(
@@ -35,15 +33,13 @@ export function useExpenseHandlers({
       const result = await updateExpense(dialog.editingExpense._id, data);
       if (result.success) {
         closeDialog();
-        await fetchExpenses(selectedMonth);
+        // Cache is already invalidated by updateExpense, SWR will refetch in background
       }
     },
     [
       updateExpense,
       dialog.editingExpense,
       closeDialog,
-      fetchExpenses,
-      selectedMonth,
     ]
   );
 

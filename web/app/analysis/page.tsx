@@ -4,8 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { PageLayout } from "@/components/page-layout";
 import { useAnalysisStats } from "@/hooks/useAnalysisStats";
 import { useMonthSelection } from "@/hooks/useMonthSelection";
-import { Spinner } from "@/components/ui/spinner";
 import { ErrorDisplay } from "@/components/error-display";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { BudgetOverviewCard } from "@/components/budget-overview-card";
 import { TopCategoriesCard } from "@/components/top-categories-card";
@@ -34,12 +34,7 @@ export default function AnalysisPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div
-          className="flex items-center justify-center w-full"
-          style={{ minHeight: "calc(100vh - 8rem)" }}
-        >
-          <Spinner size="lg" />
-        </div>
+        <AnalysisSkeleton />
       </PageLayout>
     );
   }

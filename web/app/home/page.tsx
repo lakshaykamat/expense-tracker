@@ -2,14 +2,13 @@
 
 import React, { lazy, Suspense, useState } from 'react'
 import { ExpenseList } from '@/components/expense-list'
-import { FabButton } from '@/components/fab-button'
 import { PageLayout } from '@/components/page-layout'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useExpenseDialog } from '@/hooks/useExpenseDialog'
 import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
 import { useMonthSelection } from '@/hooks/useMonthSelection'
-import { Spinner } from '@/components/ui/spinner'
 import { DeleteExpenseDialog } from '@/components/delete-expense-dialog'
+import { ExpenseListSkeleton } from '@/components/expense-list-skeleton'
 import type { Expense } from '@/types'
 
 // Lazy load dialog component (only loads when needed)
@@ -33,7 +32,6 @@ export default function HomePage() {
   const { handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useExpenseHandlers({
     expenses: expensesHook,
     dialog: dialogHook,
-    selectedMonth: selectedMonth
   })
 
   const handleAddExpenseWithLoading = async (data: any) => {
@@ -73,9 +71,7 @@ export default function HomePage() {
   if (loading && expenses.length === 0) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center w-full" style={{ minHeight: 'calc(100vh - 8rem)' }}>
-          <Spinner size="lg" />
-        </div>
+        <ExpenseListSkeleton />
       </PageLayout>
     )
   }
@@ -94,8 +90,6 @@ export default function HomePage() {
         onMonthChange={setSelectedMonth}
         availableMonths={availableMonths}
       />
-
-      <FabButton onClick={openAddDialog} />
 
       <Suspense fallback={null}>
         <ExpenseDialog

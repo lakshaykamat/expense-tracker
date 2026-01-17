@@ -3,8 +3,8 @@
 import React from "react";
 import type { Budget } from "@/types";
 import { PageHeader } from "./page-header";
-import { Spinner } from "./ui/spinner";
 import { EmptyState } from "./empty-state";
+import { BudgetDisplaySkeleton } from "./budget-display-skeleton";
 import { ErrorDisplay } from "./error-display";
 import { formatMonthDisplay } from "@/utils/date.utils";
 import { formatCurrency } from "@/utils/currency.utils";
@@ -39,9 +39,7 @@ export function BudgetDisplay({
 }: BudgetDisplayProps) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Spinner size="lg" />
-      </div>
+      <BudgetDisplaySkeleton />
     );
   }
 
