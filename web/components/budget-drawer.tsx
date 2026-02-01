@@ -62,7 +62,7 @@ export function BudgetDrawer({
         className={cn(
           "rounded-none",
           isMobile
-            ? "max-h-[80dvh] flex flex-col min-h-0"
+            ? "h-[80dvh] max-h-[80dvh] flex flex-col min-h-0"
             : "h-full flex flex-col min-h-0"
         )}
       >
@@ -209,7 +209,7 @@ export function BudgetDrawer({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-border/10 bg-background px-4 md:px-6 pb-4 md:pb-6 pt-4 safe-area-inset-bottom">
+            <div className="shrink-0 border-t border-border/10 bg-background px-4 md:px-6 pb-4 md:pb-6 pt-4">
               <Button
                 type="submit"
                 disabled={isSubmitDisabled || isLoading}
