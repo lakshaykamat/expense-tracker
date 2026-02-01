@@ -45,6 +45,24 @@ export class BudgetsController {
     return this.budgetsService.getAnalysisStats(req.user.userId, month);
   }
 
+  @Get('analysis/week-details')
+  getWeekDetails(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Request() req,
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException(
+        'startDate and endDate query parameters are required',
+      );
+    }
+    return this.budgetsService.getWeekDetails(
+      req.user.userId,
+      startDate,
+      endDate,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
     return this.budgetsService.findOne(id, req.user.userId);

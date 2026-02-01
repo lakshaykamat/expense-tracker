@@ -381,4 +381,21 @@ export class BudgetsService {
       weeklyExpenses,
     };
   }
+
+  async getWeekDetails(
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{
+    categoryBreakdown: Array<{ category: string; amount: number }>;
+  }> {
+    const categoryBreakdown =
+      await this.expensesService.getCategoryBreakdownForDateRange(
+        userId,
+        startDate,
+        endDate,
+      );
+
+    return { categoryBreakdown };
+  }
 }

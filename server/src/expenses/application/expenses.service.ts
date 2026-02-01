@@ -114,6 +114,34 @@ export class ExpensesService {
     return this.repository.findAll(userId, dateQuery);
   }
 
+  async findByDateRange(
+    userId: string,
+    startDateStr: string,
+    endDateStr: string,
+  ) {
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+
+    const startDate = new Date(startDateStr + 'T00:00:00.000Z');
+    const endDate = new Date(endDateStr + 'T23:59:59.999Z');
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new BadRequestException('Invalid date format. Expected YYYY-MM-DD');
+    }
+
+    if (startDate > endDate) {
+      throw new BadRequestException('startDate must be before or equal to endDate');
+    }
+
+    const dateQuery = {
+      $gte: startDate,
+      $lte: endDate,
+    };
+
+    return this.repository.findAll(userId, dateQuery);
+  }
+
   async findAllForExport(userId: string): Promise<any[]> {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID format');
@@ -210,6 +238,27 @@ export class ExpensesService {
 
     try {
       const { startDate, endDate } = getMonthDateRange(month);
+      return this.repository.getCategoryBreakdown(userId, startDate, endDate);
+    } catch {
+      return [];
+    }
+  }
+
+  async getCategoryBreakdownForDateRange(
+    userId: string,
+    startDateStr: string,
+    endDateStr: string,
+  ): Promise<Array<{ category: string; amount: number }>> {
+    if (!isValidObjectId(userId)) {
+      return [];
+    }
+
+    try {
+      const startDate = new Date(startDateStr + 'T00:00:00.000Z');
+      const endDate = new Date(endDateStr + 'T23:59:59.999Z');
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return [];
+      }
       return this.repository.getCategoryBreakdown(userId, startDate, endDate);
     } catch {
       return [];
