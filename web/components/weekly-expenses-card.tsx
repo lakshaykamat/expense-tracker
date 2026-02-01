@@ -4,7 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/utils/currency.utils";
-import { budgetsApi } from "@/lib/budgets-api";
+import { expensesApi } from "@/lib/expenses-api";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -74,10 +74,19 @@ function WeekRow({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const weekKey = `${expense.startDate}-${expense.endDate}`;
-  const { data, isLoading } = useSWR(
-    isExpanded ? ["week-details", weekKey] : null,
-    () => budgetsApi.getWeekDetails(expense.startDate, expense.endDate)
+  const weekKey = isExpanded
+    ? `/expenses?startDate=${expense.startDate}&endDate=${expense.endDate}&groupBy=category`
+    : null;
+  const { data: categoryBreakdown = [], isLoading } = useSWR<
+    Array<{ category: string; amount: number }>
+  >(
+    weekKey,
+    () =>
+      expensesApi.getAll({
+        startDate: expense.startDate,
+        endDate: expense.endDate,
+        groupBy: "category",
+      }) as Promise<Array<{ category: string; amount: number }>>
   );
 
   return (
@@ -118,8 +127,8 @@ function WeekRow({
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-28" />
             </div>
-          ) : data ? (
-            <WeekDetails categoryBreakdown={data.categoryBreakdown} />
+          ) : categoryBreakdown.length > 0 ? (
+            <WeekDetails categoryBreakdown={categoryBreakdown} />
           ) : (
             <p className="text-sm text-muted-foreground py-1">
               No expenses in this week

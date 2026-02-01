@@ -74,22 +74,6 @@ export const budgetsApi = {
     }
   },
 
-  async getWeekDetails(
-    startDate: string,
-    endDate: string
-  ): Promise<{
-    categoryBreakdown: Array<{ category: string; amount: number }>;
-  }> {
-    const response = await api.get<
-      ApiResponse<{
-        categoryBreakdown: Array<{ category: string; amount: number }>;
-      }>
-    >("/budgets/analysis/week-details", {
-      params: { startDate, endDate },
-    });
-    return response.data.data;
-  },
-
   async getAnalysisStats(month: string): Promise<AnalysisStats> {
     if (!month) {
       throw new Error("Month parameter is required");

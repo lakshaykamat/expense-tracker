@@ -10,10 +10,10 @@ import { PageLayout } from "@/components/page-layout";
 import { BudgetFab } from "@/components/budget-fab";
 import { Plus } from "lucide-react";
 
-// Lazy load dialog component (only loads when needed)
-const BudgetDialog = lazy(() =>
-  import("@/components/budget-dialog").then((module) => ({
-    default: module.BudgetDialog,
+// Lazy load drawer component (only loads when needed)
+const BudgetDrawer = lazy(() =>
+  import("@/components/budget-drawer").then((module) => ({
+    default: module.BudgetDrawer,
   }))
 );
 
@@ -66,9 +66,9 @@ export default function BudgetsPage() {
         onDeleteItem={handleDeleteItem}
       />
 
-      {/* Budget Dialog */}
+      {/* Budget Drawer */}
       <Suspense fallback={null}>
-        <BudgetDialog
+        <BudgetDrawer
           open={isDialogOpen}
           onOpenChange={closeDialog}
           onSubmit={handleBudgetSubmitWithLoading}
