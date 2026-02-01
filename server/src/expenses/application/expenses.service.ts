@@ -88,57 +88,62 @@ export class ExpensesService {
     };
   }
 
-  async findAll(userId: string, month?: string) {
-    if (!isValidObjectId(userId)) {
-      throw new BadRequestException('Invalid user ID format');
-    }
-
-    const monthToUse = month || getCurrentMonth();
-    let dateQuery: any = undefined;
-
-    if (monthToUse) {
-      if (!isValidMonthFormat(monthToUse)) {
-        throw new BadRequestException('Invalid month format. Expected YYYY-MM');
-      }
-      try {
-        const { startDate, endDate } = getMonthDateRange(monthToUse);
-        dateQuery = {
-          $gte: startDate,
-          $lt: endDate,
-        };
-      } catch (error: any) {
-        throw new BadRequestException(error.message || 'Invalid month format');
-      }
-    }
-
-    return this.repository.findAll(userId, dateQuery);
-  }
-
-  async findByDateRange(
+  async findAll(
     userId: string,
-    startDateStr: string,
-    endDateStr: string,
+    month?: string,
+    startDateStr?: string,
+    endDateStr?: string,
+    groupBy?: string,
   ) {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException('Invalid user ID format');
     }
 
-    const startDate = new Date(startDateStr + 'T00:00:00.000Z');
-    const endDate = new Date(endDateStr + 'T23:59:59.999Z');
+    let startDate: Date;
+    let endDate: Date;
+    let useInclusiveEnd = false;
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new BadRequestException('Invalid date format. Expected YYYY-MM-DD');
+    if (startDateStr && endDateStr) {
+      startDate = new Date(startDateStr + 'T00:00:00.000Z');
+      endDate = new Date(endDateStr + 'T23:59:59.999Z');
+      useInclusiveEnd = true;
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new BadRequestException('Invalid date format. Expected YYYY-MM-DD');
+      }
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'startDate must be before or equal to endDate',
+        );
+      }
+    } else {
+      const monthToUse = month || getCurrentMonth();
+      if (!monthToUse) {
+        return this.repository.findAll(userId, undefined);
+      }
+      if (!isValidMonthFormat(monthToUse)) {
+        throw new BadRequestException(
+          'Invalid month format. Expected YYYY-MM',
+        );
+      }
+      try {
+        const range = getMonthDateRange(monthToUse);
+        startDate = range.startDate;
+        endDate = range.endDate;
+      } catch (error: any) {
+        throw new BadRequestException(
+          error.message || 'Invalid month format',
+        );
+      }
     }
 
-    if (startDate > endDate) {
-      throw new BadRequestException('startDate must be before or equal to endDate');
+    // groupBy=category: server-side aggregation, fast, minimal payload
+    if (groupBy === 'category' && startDateStr && endDateStr) {
+      return this.repository.getCategoryBreakdown(userId, startDate, endDate);
     }
 
-    const dateQuery = {
-      $gte: startDate,
-      $lte: endDate,
-    };
-
+    const dateQuery = useInclusiveEnd
+      ? { $gte: startDate, $lte: endDate }
+      : { $gte: startDate, $lt: endDate };
     return this.repository.findAll(userId, dateQuery);
   }
 
@@ -238,27 +243,6 @@ export class ExpensesService {
 
     try {
       const { startDate, endDate } = getMonthDateRange(month);
-      return this.repository.getCategoryBreakdown(userId, startDate, endDate);
-    } catch {
-      return [];
-    }
-  }
-
-  async getCategoryBreakdownForDateRange(
-    userId: string,
-    startDateStr: string,
-    endDateStr: string,
-  ): Promise<Array<{ category: string; amount: number }>> {
-    if (!isValidObjectId(userId)) {
-      return [];
-    }
-
-    try {
-      const startDate = new Date(startDateStr + 'T00:00:00.000Z');
-      const endDate = new Date(endDateStr + 'T23:59:59.999Z');
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return [];
-      }
       return this.repository.getCategoryBreakdown(userId, startDate, endDate);
     } catch {
       return [];

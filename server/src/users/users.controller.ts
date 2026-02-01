@@ -9,12 +9,6 @@ export class UsersController {
     private readonly usersService: UsersService
   ) {}
 
-  @Get("me")
-  @UseGuards(JwtAuthGuard)
-  me(@Req() req) {
-    return this.usersService.getProfile(req.user);
-  }
-
   @Get('export/csv')
   @UseGuards(JwtAuthGuard)
   async exportToCSV(@Req() req, @Res() res: Response) {

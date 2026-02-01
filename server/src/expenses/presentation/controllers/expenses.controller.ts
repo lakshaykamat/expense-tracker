@@ -1,13 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ExpensesService } from '../../application/expenses.service';
 import { CreateExpenseDto } from '../dto/create-expense.dto';
 import { UpdateExpenseDto } from '../dto/update-expense.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { LoggedInUser } from '../../../common/decorators/loggedin-user.decorator';
 import type { UserDocument } from '../../../auth/schemas/user.schema';
-import { convertToCSV } from '../../../common/utils/csv.utils';
-
 export class BulkCreateExpenseDto {
   expenses: CreateExpenseDto[];
 }
@@ -42,19 +39,20 @@ export class ExpensesController {
   }
 
   @Get()
-  findAll(@Query('month') month: string, @LoggedInUser() user: UserDocument) {
-    return this.expensesService.findAll(user._id.toString(), month);
-  }
-
-  @Get('export/csv')
-  async exportToCSV(@LoggedInUser() user: UserDocument, @Res() res: Response) {
-    const expenses = await this.expensesService.findAllForExport(user._id.toString());
-    const headers = ['_id', 'title', 'amount', 'description', 'category', 'date', 'createdAt', 'updatedAt'];
-    const csv = convertToCSV(expenses, headers);
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="expenses-${new Date().toISOString().split('T')[0]}.csv"`);
-    res.send(csv);
+  findAll(
+    @Query('month') month: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('groupBy') groupBy: string,
+    @LoggedInUser() user: UserDocument,
+  ) {
+    return this.expensesService.findAll(
+      user._id.toString(),
+      month,
+      startDate,
+      endDate,
+      groupBy,
+    );
   }
 
   @Get(':id')
