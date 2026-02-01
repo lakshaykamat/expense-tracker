@@ -152,7 +152,15 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
-    const budget = await this.repository.findByMonth(userId, month);
+    let budget = await this.repository.findByMonth(userId, month);
+    if (!budget) {
+      // When new month arrives, copy from most recent previous month
+      const copiedBudget = await this.copyMostRecentBudget(userId, month);
+      if (copiedBudget) {
+        budget = await this.repository.findOneById(copiedBudget._id.toString());
+      }
+    }
+
     if (!budget) {
       return null;
     }

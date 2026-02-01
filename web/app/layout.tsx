@@ -5,6 +5,7 @@ import { Navigation } from "@/components/navigation";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { MobileHeader } from "@/components/mobile-header";
 import { SWRProvider } from "./providers/swr-provider";
+import { ThemeProvider } from "./providers/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ThemeProvider>
         <SWRProvider>
         <Navigation />
         <MobileHeader />
@@ -69,6 +71,7 @@ export default function RootLayout({
         </main>
         <MobileNavigation />
         </SWRProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

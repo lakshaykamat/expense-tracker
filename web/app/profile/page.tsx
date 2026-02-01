@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { PageLayout } from '@/components/page-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,13 +12,14 @@ import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { AuthService } from '@/lib/auth-service'
 import { usersApi } from '@/lib/users-api'
-import { LogOut, Mail, Download } from 'lucide-react'
+import { LogOut, Mail, Download, Sun, Moon } from 'lucide-react'
 
 export const dynamic = "force-dynamic";
 
 export default function ProfilePage() {
   const router = useRouter()
   const { user, loading, error } = useUser()
+  const { theme, setTheme } = useTheme()
   const [exporting, setExporting] = useState(false)
 
   const handleLogout = async () => {
@@ -89,6 +91,36 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-muted-foreground mb-1">Email</div>
                 <div className="text-base text-foreground break-words">{user.email}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                    (theme ?? 'dark') === 'light'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Sun className="w-4 h-4" />
+                  Light
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                    (theme ?? 'dark') === 'dark'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  Dark
+                </button>
               </div>
             </div>
 
