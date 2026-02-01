@@ -48,7 +48,6 @@ export function BudgetDrawer({
 
   const isMobile = useMediaQuery("(max-width: 767px)");
   const direction = isMobile ? "bottom" : "right";
-  const side = isMobile ? "bottom" : "right";
 
   return (
     <Drawer
@@ -58,7 +57,6 @@ export function BudgetDrawer({
       snapPoints={isMobile ? [0.8] : undefined}
     >
       <DrawerContent
-        side={side}
         className={cn(
           "rounded-none",
           isMobile
