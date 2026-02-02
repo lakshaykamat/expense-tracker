@@ -17,6 +17,7 @@ export const EXPENSE_CATEGORIES = [
 'Transportation',
 'Financial',
 'Family',
+'Relationship',
 'Personal Care',
 'Electronics',
 'Clothing',
