@@ -204,18 +204,20 @@ export class ExpensesRepository {
       amount: Number(item.amount) || 0,
     }));
 
-    const weeklyAmounts = (doc?.weekly ?? []).map((item: any) => ({
+    const weeklyAmounts: Array<{ week: number; amount: number }> = (
+      doc?.weekly ?? []
+    ).map((item: any) => ({
       week: Number(item.week),
       amount: Number(item.amount) || 0,
     }));
-    const weeklyMap = new Map(
+    const weeklyMap = new Map<number, number>(
       weeklyAmounts.map((w) => [w.week, w.amount]),
     );
     const weeksInMonth = this.getWeeksInMonthWithDates(startDate, endDate);
     const weeklyExpenses = weeksInMonth
       .map((weekInfo) => ({
         week: weekInfo.week,
-        amount: weeklyMap.get(weekInfo.week) || 0,
+        amount: Number(weeklyMap.get(weekInfo.week)) || 0,
         startDate: weekInfo.startDate,
         endDate: weekInfo.endDate,
       }))
