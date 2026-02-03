@@ -5,8 +5,8 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { CreateBudgetDto } from '../presentation/dto/create-budget.dto';
 import { UpdateBudgetDto } from '../presentation/dto/update-budget.dto';
 import {
@@ -40,6 +40,7 @@ export class BudgetsService {
 
   constructor(
     @InjectModel(Budget.name) private budgetModel: Model<BudgetDocument>,
+    @InjectConnection() private connection: Connection,
     @Inject(forwardRef(() => ExpensesService))
     private expensesService: ExpensesService,
   ) {
@@ -324,14 +325,58 @@ export class BudgetsService {
       throw new BadRequestException('Invalid month format. Expected YYYY-MM');
     }
 
-    const [budgetDoc, totalExpenses, categoryBreakdown, topExpenses, weeklyExpenses] =
-      await Promise.all([
+    const emptyExpenseStats = {
+      totalExpenses: 0,
+      categoryBreakdown: [] as Array<{ category: string; amount: number }>,
+      topExpenses: [] as Array<{ title: string; amount: number }>,
+      weeklyExpenses: [] as Array<{
+        week: number;
+        amount: number;
+        startDate: string;
+        endDate: string;
+      }>,
+    };
+
+    let budgetDoc: Awaited<
+      ReturnType<BudgetsRepository['findByMonth']>
+    > = null;
+    let expenseStats = emptyExpenseStats;
+
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(
+        async () => {
+          const [b, e] = await Promise.all([
+            this.repository.findByMonth(userId, month, session),
+            this.expensesService.getAnalysisExpenseStats(
+              userId,
+              month,
+              session,
+            ),
+          ]);
+          budgetDoc = b;
+          expenseStats = e;
+        },
+        {
+          readConcern: { level: 'snapshot' },
+          readPreference: 'primary',
+        },
+      );
+    } catch {
+      const [b, e] = await Promise.all([
         this.repository.findByMonth(userId, month),
-        this.calculateSpentAmount(userId, month),
-        this.expensesService.getCategoryBreakdown(userId, month),
-        this.expensesService.getTopExpenses(userId, month, TOP_ITEMS_LIMIT),
-        this.expensesService.getWeeklyExpenses(userId, month),
+        this.expensesService.getAnalysisExpenseStats(userId, month),
       ]);
+      budgetDoc = b;
+      expenseStats = e;
+    } finally {
+      await session.endSession();
+    }
+
+    const totalExpenses = expenseStats.totalExpenses;
+    const categoryBreakdown = expenseStats.categoryBreakdown;
+    const topExpenses = expenseStats.topExpenses;
+    const weeklyExpenses = expenseStats.weeklyExpenses;
 
     const daysForAverage = calculateDaysForAverage(month);
     const dailyAverageSpend = calculateDailyAverage(

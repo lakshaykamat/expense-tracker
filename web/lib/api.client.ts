@@ -14,7 +14,7 @@ if (!process.env.NEXT_PUBLIC_API_URL && typeof window !== 'undefined') {
 // Create axios instance with default configuration
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000, // 5 seconds - faster timeout for better UX
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
   },

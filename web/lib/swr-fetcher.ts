@@ -28,9 +28,11 @@ export const swrFetcher = {
   },
   analysis: {
     getStats: async (month: string): Promise<AnalysisStats> => {
+      const monthParam =
+        typeof month === "string" ? month.trim() : month;
       const response = await api.get<ApiResponse<AnalysisStats>>(
         "/budgets/analysis/stats",
-        { params: { month } }
+        { params: { month: monthParam } }
       );
       return (
         response.data.data || {

@@ -21,6 +21,7 @@ import { UpdateBudgetDto } from '../dto/update-budget.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { type EssentialItem } from '../../domain/schemas/budget.schema';
 import { convertToCSV } from '../../../common/utils/csv.utils';
+import { isValidMonthFormat } from '../../../common/utils/validation.utils';
 
 @Controller('budgets')
 @UseGuards(JwtAuthGuard)
@@ -39,10 +40,14 @@ export class BudgetsController {
 
   @Get('analysis/stats')
   getAnalysisStats(@Query('month') month: string, @Request() req) {
-    if (!month) {
+    const trimmed = typeof month === 'string' ? month.trim() : '';
+    if (!trimmed) {
       throw new BadRequestException('Month parameter is required');
     }
-    return this.budgetsService.getAnalysisStats(req.user.userId, month);
+    if (!isValidMonthFormat(trimmed)) {
+      throw new BadRequestException('Invalid month format. Expected YYYY-MM');
+    }
+    return this.budgetsService.getAnalysisStats(req.user.userId, trimmed);
   }
 
   @Get(':id')

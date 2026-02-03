@@ -3,7 +3,7 @@
  * Database layer for budget operations
  */
 
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { BudgetDocument } from '../../domain/schemas/budget.schema';
 import {
   buildBudgetAggregationPipeline,
@@ -26,12 +26,18 @@ export class BudgetsRepository {
     return results.length > 0 ? results[0] : null;
   }
 
-  async findByMonth(userId: string, month: string) {
+  async findByMonth(
+    userId: string,
+    month: string,
+    session?: ClientSession,
+  ) {
     const userIdQuery = buildUserIdQuery(userId);
     const query = { ...userIdQuery, month };
-    const results = await this.budgetModel
-      .aggregate(buildBudgetAggregationPipeline(query, false))
-      .exec();
+    const agg = this.budgetModel.aggregate(
+      buildBudgetAggregationPipeline(query, false),
+    );
+    if (session) agg.session(session);
+    const results = await agg.exec();
     return results.length > 0 ? results[0] : null;
   }
 

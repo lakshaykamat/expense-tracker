@@ -3,7 +3,7 @@
  * Database layer for expense operations
  */
 
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { ExpenseDocument } from '../../domain/schemas/expense.schema';
 import {
   buildUserIdQuery,
@@ -16,6 +16,7 @@ import {
   getTotalExpensesForMonthsPipeline,
   getDailySpendingPipeline,
   getCategoryBreakdownPipeline,
+  getAnalysisExpenseStatsPipeline,
 } from '../aggregations/expenses.aggregations';
 
 export class ExpensesRepository {
@@ -159,6 +160,73 @@ export class ExpensesRepository {
       category: item.category,
       amount: Number(item.amount) || 0,
     }));
+  }
+
+  async getAnalysisExpenseStats(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    session?: ClientSession,
+  ): Promise<{
+    totalExpenses: number;
+    categoryBreakdown: Array<{ category: string; amount: number }>;
+    topExpenses: Array<{ title: string; amount: number }>;
+    weeklyExpenses: Array<{
+      week: number;
+      amount: number;
+      startDate: string;
+      endDate: string;
+    }>;
+  }> {
+    const userIdQuery = buildUserIdQuery(userId);
+    const agg = this.expenseModel.aggregate(
+      getAnalysisExpenseStatsPipeline(userIdQuery, startDate, endDate),
+    );
+    if (session) agg.session(session);
+    const result = await agg.exec();
+
+    const doc = result[0];
+    const totalArr = doc?.total ?? [];
+    const totalExpenses =
+      totalArr[0]?.total !== null && totalArr[0]?.total !== undefined
+        ? Number(totalArr[0].total)
+        : 0;
+
+    const categoryBreakdown = (doc?.categoryBreakdown ?? []).map(
+      (item: any) => ({
+        category: item.category,
+        amount: Number(item.amount) || 0,
+      }),
+    );
+
+    const topExpenses = (doc?.topExpenses ?? []).map((item: any) => ({
+      title: String(item.title || '').trim(),
+      amount: Number(item.amount) || 0,
+    }));
+
+    const weeklyAmounts = (doc?.weekly ?? []).map((item: any) => ({
+      week: Number(item.week),
+      amount: Number(item.amount) || 0,
+    }));
+    const weeklyMap = new Map(
+      weeklyAmounts.map((w) => [w.week, w.amount]),
+    );
+    const weeksInMonth = this.getWeeksInMonthWithDates(startDate, endDate);
+    const weeklyExpenses = weeksInMonth
+      .map((weekInfo) => ({
+        week: weekInfo.week,
+        amount: weeklyMap.get(weekInfo.week) || 0,
+        startDate: weekInfo.startDate,
+        endDate: weekInfo.endDate,
+      }))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    return {
+      totalExpenses,
+      categoryBreakdown,
+      topExpenses,
+      weeklyExpenses,
+    };
   }
 
   async getTopExpenses(

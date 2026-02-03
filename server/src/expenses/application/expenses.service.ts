@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { CreateExpenseDto } from '../presentation/dto/create-expense.dto';
 import { UpdateExpenseDto } from '../presentation/dto/update-expense.dto';
 import { Expense, ExpenseDocument } from '../domain/schemas/expense.schema';
@@ -279,6 +279,48 @@ export class ExpensesService {
       return this.repository.getWeeklyExpenses(userId, startDate, endDate);
     } catch {
       return [];
+    }
+  }
+
+  async getAnalysisExpenseStats(
+    userId: string,
+    month: string,
+    session?: ClientSession,
+  ): Promise<{
+    totalExpenses: number;
+    categoryBreakdown: Array<{ category: string; amount: number }>;
+    topExpenses: Array<{ title: string; amount: number }>;
+    weeklyExpenses: Array<{
+      week: number;
+      amount: number;
+      startDate: string;
+      endDate: string;
+    }>;
+  }> {
+    if (!isValidMonthFormat(month) || !isValidObjectId(userId)) {
+      return {
+        totalExpenses: 0,
+        categoryBreakdown: [],
+        topExpenses: [],
+        weeklyExpenses: [],
+      };
+    }
+
+    try {
+      const { startDate, endDate } = getMonthDateRange(month);
+      return this.repository.getAnalysisExpenseStats(
+        userId,
+        startDate,
+        endDate,
+        session,
+      );
+    } catch {
+      return {
+        totalExpenses: 0,
+        categoryBreakdown: [],
+        topExpenses: [],
+        weeklyExpenses: [],
+      };
     }
   }
 
