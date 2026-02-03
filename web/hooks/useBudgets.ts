@@ -15,26 +15,34 @@ import { swrKeys } from "@/lib/swr-config";
 import { swrFetcher } from "@/lib/swr-fetcher";
 import { mutate } from "swr";
 
+function normalizeMonth(month: string | undefined): string {
+  const raw = typeof month === "string" ? month.trim() : "";
+  const candidate = raw || getCurrentMonth();
+  return candidate && isValidMonthFormat(candidate)
+    ? candidate
+    : getCurrentMonth();
+}
+
 export function useBudgets(month?: string): UseBudgetsReturn {
-  const monthToUse = month || getCurrentMonth();
-  const cacheKey =
-    monthToUse && isValidMonthFormat(monthToUse)
-      ? swrKeys.budgets.byMonth(monthToUse)
-      : null;
+  const monthToUse = normalizeMonth(month);
+  const cacheKey = swrKeys.budgets.byMonth(monthToUse);
 
   const {
     data: currentBudget = null,
     error,
     isLoading,
+    isValidating,
     mutate: refetch,
   } = useSWR<Budget | null>(
     cacheKey,
-    cacheKey ? () => swrFetcher.budgets.getByMonth(monthToUse) : null,
+    () => swrFetcher.budgets.getByMonth(monthToUse),
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     }
   );
+
+  const loading = isLoading || (isValidating && currentBudget == null);
 
   const { trigger: createBudget } = useSWRMutation(
     "/budgets",
@@ -381,7 +389,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
   return {
     budgets: [],
     currentBudget,
-    loading: isLoading,
+    loading,
     error: error ? extractErrorMessage(error, "Failed to fetch budget") : null,
     fetchBudgets: async () => {
       if (monthToUse) {

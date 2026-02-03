@@ -16,14 +16,15 @@ export const swrFetcher = {
   },
   budgets: {
     getByMonth: async (month: string): Promise<Budget | null> => {
-      try {
-        const response = await api.get<ApiResponse<Budget>>(
-          `/budgets/month/${month}`
-        );
-        return response.data.data || null;
-      } catch {
-        return null;
+      const monthParam =
+        typeof month === "string" ? month.trim() : String(month ?? "");
+      if (!monthParam) {
+        throw new Error("Month is required");
       }
+      const response = await api.get<ApiResponse<Budget>>(
+        `/budgets/month/${encodeURIComponent(monthParam)}`
+      );
+      return response.data.data ?? null;
     },
   },
   analysis: {
