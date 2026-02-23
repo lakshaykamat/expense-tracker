@@ -8,7 +8,7 @@ import { useMonthSelection } from "@/hooks/useMonthSelection";
 import { BudgetDisplay } from "@/components/budget-display";
 import { PageLayout } from "@/components/page-layout";
 import { BudgetFab } from "@/components/budget-fab";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 // Lazy load drawer component (only loads when needed)
 const BudgetDrawer = lazy(() =>
@@ -78,9 +78,19 @@ export default function BudgetsPage() {
         />
       </Suspense>
 
-      {/* Floating Action Button - Mobile Only */}
-      <BudgetFab onClick={() => openAddDialog()}>
-        <Plus className="w-6 h-6" />
+      {/* Floating Action Button - Mobile only; contextual: Edit when budget exists, Add when none */}
+      <BudgetFab
+        onClick={() =>
+          currentBudget
+            ? handleEditBudget(currentBudget)
+            : openAddDialog()
+        }
+      >
+        {currentBudget ? (
+          <Pencil className="w-6 h-6" />
+        ) : (
+          <Plus className="w-6 h-6" />
+        )}
       </BudgetFab>
     </PageLayout>
   );

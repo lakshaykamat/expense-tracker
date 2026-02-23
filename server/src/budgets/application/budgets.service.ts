@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   Inject,
@@ -36,6 +37,7 @@ const TOP_ITEMS_LIMIT = 5;
 
 @Injectable()
 export class BudgetsService {
+  private readonly logger = new Logger(BudgetsService.name);
   private repository: BudgetsRepository;
 
   constructor(
@@ -362,7 +364,11 @@ export class BudgetsService {
           readPreference: 'primary',
         },
       );
-    } catch {
+    } catch (err) {
+      this.logger.warn(
+        'Analysis stats transaction failed, falling back to non-transactional read',
+        err instanceof Error ? err.message : err,
+      );
       const [b, e] = await Promise.all([
         this.repository.findByMonth(userId, month),
         this.expensesService.getAnalysisExpenseStats(userId, month),

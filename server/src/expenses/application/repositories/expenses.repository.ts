@@ -186,6 +186,20 @@ export class ExpensesRepository {
     const result = await agg.exec();
 
     const doc = result[0];
+    if (!doc) {
+      const weeksInMonth = this.getWeeksInMonthWithDates(startDate, endDate);
+      return {
+        totalExpenses: 0,
+        categoryBreakdown: [],
+        topExpenses: [],
+        weeklyExpenses: weeksInMonth.map((w) => ({
+          week: w.week,
+          amount: 0,
+          startDate: w.startDate,
+          endDate: w.endDate,
+        })),
+      };
+    }
     const totalArr = doc?.total ?? [];
     const totalExpenses =
       totalArr[0]?.total !== null && totalArr[0]?.total !== undefined
@@ -247,7 +261,7 @@ export class ExpensesRepository {
             ...userIdQuery,
             date: {
               $gte: startDate,
-              $lte: endDate,
+              $lt: endDate,
             },
           },
         },
@@ -301,7 +315,7 @@ export class ExpensesRepository {
             ...userIdQuery,
             date: {
               $gte: startDate,
-              $lte: endDate,
+              $lt: endDate,
             },
           },
         },

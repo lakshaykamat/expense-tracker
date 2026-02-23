@@ -23,6 +23,11 @@ function normalizeMonth(month: string | undefined): string {
     : getCurrentMonth();
 }
 
+/** Sort essential items like server: amount desc (stable order for reopen/refetch) */
+function sortEssentialItemsLikeServer(items: EssentialItem[]): EssentialItem[] {
+  return [...items].sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
+}
+
 export function useBudgets(month?: string): UseBudgetsReturn {
   const monthToUse = normalizeMonth(month);
   const cacheKey = swrKeys.budgets.byMonth(monthToUse);
@@ -285,17 +290,20 @@ export function useBudgets(month?: string): UseBudgetsReturn {
 
     const budgetKey = swrKeys.budgets.byMonth(currentBudget.month);
 
-    // Create optimistic updated budget with new item
+    // Create optimistic updated budget with new item (same order as server: amount desc)
     const optimisticBudget: Budget = {
       ...currentBudget,
-      essentialItems: [...currentBudget.essentialItems, item],
+      essentialItems: sortEssentialItemsLikeServer([
+        ...currentBudget.essentialItems,
+        item,
+      ]),
       totalBudget:
         currentBudget.totalBudget + (item.amount || 0),
       updatedAt: new Date().toISOString(),
     };
 
     try {
-      // Optimistically update budget immediately
+      // Optimistically update budget immediately (no revalidate to avoid list reordering)
       await mutate(
         budgetKey,
         async () => {
@@ -303,7 +311,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
         },
         {
           optimisticData: optimisticBudget,
-          revalidate: true,
+          revalidate: false,
           rollbackOnError: true,
         }
       );
@@ -354,7 +362,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
     };
 
     try {
-      // Optimistically update budget immediately
+      // Optimistically update budget immediately (no revalidate to avoid list reordering)
       await mutate(
         budgetKey,
         async () => {
@@ -362,7 +370,7 @@ export function useBudgets(month?: string): UseBudgetsReturn {
         },
         {
           optimisticData: optimisticBudget,
-          revalidate: true,
+          revalidate: false,
           rollbackOnError: true,
         }
       );
@@ -373,7 +381,9 @@ export function useBudgets(month?: string): UseBudgetsReturn {
       // Call mutation in background
       await removeEssentialItemMutation({ budgetId, itemName });
 
-      // Cache will be updated by SWR revalidation
+      // Keep cache as optimistic state (API doesn't return updated budget; avoid refetch reorder)
+      await mutate(budgetKey, async () => optimisticBudget, { revalidate: false });
+
       return { success: true };
     } catch (err: any) {
       // SWR will automatically rollback on error

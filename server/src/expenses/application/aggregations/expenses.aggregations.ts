@@ -3,8 +3,13 @@
  * Centralized aggregation logic for database operations
  */
 
+import type { PipelineStage } from 'mongoose';
+
+/** Query shape from buildUserIdQuery - matches by userId (ObjectId or string) */
+export type UserIdQuery = { $or?: Array<{ userId: unknown }>; userId?: unknown };
+
 export const getTotalExpensesForMonthPipeline = (
-  userIdQuery: any,
+  userIdQuery: UserIdQuery,
   startDate: Date,
   endDate: Date,
 ) => [
@@ -26,7 +31,7 @@ export const getTotalExpensesForMonthPipeline = (
 ];
 
 export const getTotalExpensesForMonthsPipeline = (
-  userIdQuery: any,
+  userIdQuery: UserIdQuery,
   monthRanges: Array<{ month: string; startDate: Date; endDate: Date }>,
 ) => [
   {
@@ -55,7 +60,7 @@ export const getTotalExpensesForMonthsPipeline = (
 ];
 
 export const getDailySpendingPipeline = (
-  userIdQuery: any,
+  userIdQuery: UserIdQuery,
   startDate: Date,
   endDate: Date,
 ) => [
@@ -92,7 +97,7 @@ export const getDailySpendingPipeline = (
 ];
 
 export const getCategoryBreakdownPipeline = (
-  userIdQuery: any,
+  userIdQuery: UserIdQuery,
   startDate: Date,
   endDate: Date,
 ) => [
@@ -125,17 +130,15 @@ export const getCategoryBreakdownPipeline = (
   },
 ];
 
-const TOP_EXPENSES_LIMIT = 5;
-
-/**
+const TOP_EXPENSES_LIMIT = 5;/**
  * Single aggregation for analysis stats: total, category breakdown, top expenses, weekly totals.
  * One pass over the date range instead of four separate aggregations.
  */
 export function getAnalysisExpenseStatsPipeline(
-  userIdQuery: any,
+  userIdQuery: UserIdQuery,
   startDate: Date,
   endDate: Date,
-): any[] {
+): PipelineStage[] {
   return [
     {
       $match: {
@@ -219,6 +222,5 @@ export function getAnalysisExpenseStatsPipeline(
         ],
       },
     },
-  ];
+  ] as PipelineStage[];
 }
-

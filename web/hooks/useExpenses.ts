@@ -15,6 +15,18 @@ import { swrFetcher } from "@/lib/swr-fetcher";
 import { mutate } from "swr";
 import { getMonthFromDate } from "@/utils/date.utils";
 
+/** Sort expenses like server: date desc, then createdAt desc (stable order for reopen/refetch) */
+function sortExpensesLikeServer(list: Expense[]): Expense[] {
+  return [...list].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    if (dateB !== dateA) return dateB - dateA;
+    const createdA = new Date(a.createdAt ?? 0).getTime();
+    const createdB = new Date(b.createdAt ?? 0).getTime();
+    return createdB - createdA;
+  });
+}
+
 export function useExpenses(month?: string): UseExpensesReturn {
   const monthToUse = month || getCurrentMonth();
   const cacheKey =
@@ -98,32 +110,24 @@ export function useExpenses(month?: string): UseExpensesReturn {
       // Get current expenses from hook if viewing the same month, otherwise empty array
       const currentExpensesForMonth = expenseMonth === monthToUse ? expenses : [];
 
-      // Create optimistic expenses array (sorted newest first)
-      const optimisticExpenses = [...currentExpensesForMonth, tempExpense].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      // Create optimistic expenses array (same order as server: date desc, createdAt desc)
+      const optimisticExpenses = sortExpensesLikeServer([
+        ...currentExpensesForMonth,
+        tempExpense,
+      ]);
 
       // Optimistically update UI immediately (synchronous, fire and forget)
       // Use updater function to get current cache data and merge with optimistic data
       mutate(
         expenseKey,
         async (currentExpenses: Expense[] | undefined) => {
-          // Use cache data if available, otherwise use hook's expenses if viewing same month
           const expensesList = currentExpenses ?? currentExpensesForMonth;
-          const newExpenses = [...expensesList, tempExpense].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          return newExpenses;
+          return sortExpensesLikeServer([...expensesList, tempExpense]);
         },
         {
-          // Optimistic data function - called immediately for instant UI update
           optimisticData: (currentExpenses: Expense[] | undefined) => {
-            // If cache has data, use it; otherwise use hook's expenses if same month
             const expensesList = currentExpenses ?? currentExpensesForMonth;
-            const newExpenses = [...expensesList, tempExpense].sort(
-              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-            );
-            return newExpenses;
+            return sortExpensesLikeServer([...expensesList, tempExpense]);
           },
           revalidate: false, // Don't revalidate yet, wait for server response
           rollbackOnError: true, // Rollback if mutation fails
@@ -137,7 +141,7 @@ export function useExpenses(month?: string): UseExpensesReturn {
       // Call mutation in background
       const newExpense = await createExpense(data);
 
-      // Replace temp expense with server response
+      // Replace temp expense with server response; keep server order (no revalidate to avoid reordering)
       await mutate(
         expenseKey,
         async (currentExpenses: Expense[] | undefined) => {
@@ -146,7 +150,7 @@ export function useExpenses(month?: string): UseExpensesReturn {
             exp._id === tempExpense._id ? newExpense : exp
           );
         },
-        { revalidate: true }
+        { revalidate: false }
       );
 
       return { success: true };
@@ -201,19 +205,11 @@ export function useExpenses(month?: string): UseExpensesReturn {
         // Add to new month optimistically
         await mutate(
           newExpenseKey,
-          async (currentExpenses: Expense[] = []) => {
-            const newExpenses = [...currentExpenses, optimisticExpense].sort(
-              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-            );
-            return newExpenses;
-          },
+          async (currentExpenses: Expense[] = []) =>
+            sortExpensesLikeServer([...currentExpenses, optimisticExpense]),
           {
-            optimisticData: (currentExpenses: Expense[] = []) => {
-              const newExpenses = [...currentExpenses, optimisticExpense].sort(
-                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-              );
-              return newExpenses;
-            },
+            optimisticData: (currentExpenses: Expense[] = []) =>
+              sortExpensesLikeServer([...currentExpenses, optimisticExpense]),
             revalidate: true,
             rollbackOnError: true,
           }
@@ -254,14 +250,10 @@ export function useExpenses(month?: string): UseExpensesReturn {
       // Update cache with server response (replace optimistic data)
       if (oldExpenseMonth !== newExpenseMonth) {
         await mutate(newExpenseKey, async (currentExpenses: Expense[] = []) => {
-          // Remove temp or old expense, add updated expense
           const filtered = currentExpenses.filter(
             (exp) => exp._id !== id && exp._id !== optimisticExpense._id
           );
-          const newExpenses = [...filtered, updatedExpense].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          return newExpenses;
+          return sortExpensesLikeServer([...filtered, updatedExpense]);
         }, { revalidate: false });
       } else {
         await mutate(oldExpenseKey, async (currentExpenses: Expense[] = []) => {

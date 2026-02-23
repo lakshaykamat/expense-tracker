@@ -2,7 +2,7 @@
 
 import { Button } from './ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, Plus, Pencil } from 'lucide-react'
 
 interface PageHeaderProps {
   availableMonths?: string[]
@@ -11,6 +11,8 @@ interface PageHeaderProps {
   buttonText?: string
   onButtonClick?: () => void
   showButton?: boolean
+  /** 'add' shows Plus, 'edit' shows Pencil (default: 'add') */
+  buttonIcon?: 'add' | 'edit'
 }
 
 export function PageHeader({
@@ -19,7 +21,8 @@ export function PageHeader({
   onMonthChange,
   buttonText,
   onButtonClick,
-  showButton = true
+  showButton = true,
+  buttonIcon = 'add',
 }: PageHeaderProps) {
   const formatMonth = (monthString: string) => {
     const date = new Date(monthString + '-01')
@@ -65,15 +68,13 @@ export function PageHeader({
         {showButton && buttonText && onButtonClick && (
           <Button
             onClick={onButtonClick}
-            className="hidden md:block h-10"
-            style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              whiteSpace: 'nowrap'
-            }}
+            className="hidden md:inline-flex h-10 items-center gap-2 whitespace-nowrap"
           >
-            <Plus className="w-4 h-4 flex-shrink-0" />
+            {buttonIcon === 'edit' ? (
+              <Pencil className="w-4 h-4 flex-shrink-0" />
+            ) : (
+              <Plus className="w-4 h-4 flex-shrink-0" />
+            )}
             <span>{buttonText}</span>
           </Button>
         )}

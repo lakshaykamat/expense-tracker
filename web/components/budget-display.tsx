@@ -51,6 +51,7 @@ export function BudgetDisplay({
           selectedMonth={selectedMonth}
           onMonthChange={onMonthChange}
           buttonText="Add Budget"
+          buttonIcon="add"
           onButtonClick={onAddBudget}
         />
         <ErrorDisplay
@@ -73,6 +74,7 @@ export function BudgetDisplay({
         selectedMonth={selectedMonth}
         onMonthChange={onMonthChange}
         buttonText={displayBudget ? "Edit Budget" : "Add Budget"}
+        buttonIcon={displayBudget ? "edit" : "add"}
         onButtonClick={
           displayBudget
             ? () => onEditBudget && onEditBudget(displayBudget)
