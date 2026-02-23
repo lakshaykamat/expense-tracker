@@ -1,0 +1,88 @@
+import type { PipelineStage } from 'mongoose';
+
+export type UserIdQuery = { $or?: Array<{ userId: unknown }>; userId?: unknown };
+
+export const getTotalExpensesForMonthPipeline = (
+  userIdQuery: UserIdQuery,
+  startDate: Date,
+  endDate: Date,
+) => [
+  { $match: { ...userIdQuery, date: { $gte: startDate, $lt: endDate } } },
+  { $group: { _id: null, total: { $sum: '$amount' } } },
+];
+
+export const getTotalExpensesForMonthsPipeline = (
+  userIdQuery: UserIdQuery,
+  monthRanges: Array<{ month: string; startDate: Date; endDate: Date }>,
+) => [
+  {
+    $match: {
+      ...userIdQuery,
+      $or: monthRanges.map((r) => ({ date: { $gte: r.startDate, $lt: r.endDate } })),
+    },
+  },
+  {
+    $group: {
+      _id: { $dateToString: { format: '%Y-%m', date: '$date', timezone: 'UTC' } },
+      total: { $sum: '$amount' },
+    },
+  },
+];
+
+export const getDailySpendingPipeline = (
+  userIdQuery: UserIdQuery,
+  startDate: Date,
+  endDate: Date,
+) => [
+  { $match: { ...userIdQuery, date: { $gte: startDate, $lt: endDate } } },
+  { $addFields: { dayOfMonth: { $dayOfMonth: '$date' } } },
+  { $group: { _id: '$dayOfMonth', spending: { $sum: '$amount' } } },
+  { $project: { _id: 0, day: '$_id', spending: 1 } },
+  { $sort: { day: 1 as const } },
+];
+
+export const getCategoryBreakdownPipeline = (
+  userIdQuery: UserIdQuery,
+  startDate: Date,
+  endDate: Date,
+) => [
+  { $match: { ...userIdQuery, date: { $gte: startDate, $lt: endDate } } },
+  { $group: { _id: { $ifNull: ['$category', 'Uncategorized'] }, amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+  { $project: { _id: 0, category: '$_id', amount: 1, count: 1 } },
+  { $sort: { amount: -1 as const } },
+];
+
+const TOP_EXPENSES_LIMIT = 5;
+
+export function getAnalysisExpenseStatsPipeline(
+  userIdQuery: UserIdQuery,
+  startDate: Date,
+  endDate: Date,
+): PipelineStage[] {
+  return [
+    { $match: { ...userIdQuery, date: { $gte: startDate, $lt: endDate } } },
+    {
+      $facet: {
+        total: [{ $group: { _id: null, total: { $sum: '$amount' } } }],
+        categoryBreakdown: [
+          { $group: { _id: { $ifNull: ['$category', 'Uncategorized'] }, amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+          { $project: { _id: 0, category: '$_id', amount: 1, count: 1 } },
+          { $sort: { amount: -1 } },
+        ],
+        topExpenses: [
+          { $addFields: { trimmedTitle: { $trim: { input: '$title' } } } },
+          { $group: { _id: '$trimmedTitle', amount: { $sum: '$amount' } } },
+          { $sort: { amount: -1 } },
+          { $limit: TOP_EXPENSES_LIMIT },
+          { $project: { _id: 0, title: '$_id', amount: 1 } },
+        ],
+        weekly: [
+          { $addFields: { isoWeek: { $isoWeek: '$date' } } },
+          { $group: { _id: '$isoWeek', amount: { $sum: '$amount' } } },
+          { $sort: { _id: 1 } },
+          { $project: { _id: 0, week: '$_id', amount: 1 } },
+        ],
+      },
+    },
+  ] as PipelineStage[];
+}

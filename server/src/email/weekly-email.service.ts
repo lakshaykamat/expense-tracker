@@ -6,7 +6,7 @@ import { User, UserDocument } from '../auth/schemas/user.schema';
 import {
   Expense,
   ExpenseDocument,
-} from '../expenses/domain/schemas/expense.schema';
+} from '../modules/expenses/entities/expense.schema';
 import { toObjectId } from '../common/utils/query.utils';
 
 @Injectable()

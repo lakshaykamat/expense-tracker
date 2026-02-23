@@ -4,7 +4,7 @@ import { BudgetsService } from './application/budgets.service';
 import { BudgetsController } from './presentation/controllers/budgets.controller';
 import { Budget, BudgetSchema } from './domain/schemas/budget.schema';
 import { AuthModule } from '../auth/auth.module';
-import { ExpensesModule } from '../expenses/expenses.module';
+import { ExpensesModule } from '../modules/expenses/expenses.module';
 
 @Module({
   imports: [

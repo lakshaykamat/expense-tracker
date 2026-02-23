@@ -3,8 +3,6 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -15,7 +13,7 @@ import {
   BudgetDocument,
   EssentialItem,
 } from '../domain/schemas/budget.schema';
-import { ExpensesService } from '../../expenses/application/expenses.service';
+import { ExpensesQueryService } from '../../modules/expenses/service/expenses-query.service';
 import { getCurrentMonth } from '../../common/utils/date.utils';
 import {
   isValidObjectId,
@@ -43,8 +41,7 @@ export class BudgetsService {
   constructor(
     @InjectModel(Budget.name) private budgetModel: Model<BudgetDocument>,
     @InjectConnection() private connection: Connection,
-    @Inject(forwardRef(() => ExpensesService))
-    private expensesService: ExpensesService,
+    private expensesQueryService: ExpensesQueryService,
   ) {
     this.repository = new BudgetsRepository(this.budgetModel);
   }
@@ -78,7 +75,7 @@ export class BudgetsService {
 
     const months = budgets.map((b) => b.month);
     const spentAmountsMap =
-      await this.expensesService.getTotalExpensesForMonths(userId, months);
+      await this.expensesQueryService.getTotalExpensesForMonths(userId, months);
 
     return budgets.map((budget) => ({
       ...budget,
@@ -213,7 +210,7 @@ export class BudgetsService {
     userId: string,
     month: string,
   ): Promise<number> {
-    return this.expensesService.getTotalExpensesForMonth(userId, month);
+    return this.expensesQueryService.getTotalExpensesForMonth(userId, month);
   }
 
   private async buildBudgetResponse(budget: any, userId: string): Promise<any> {
@@ -350,7 +347,7 @@ export class BudgetsService {
         async () => {
           const [b, e] = await Promise.all([
             this.repository.findByMonth(userId, month, session),
-            this.expensesService.getAnalysisExpenseStats(
+            this.expensesQueryService.getAnalysisExpenseStats(
               userId,
               month,
               session,
@@ -371,7 +368,7 @@ export class BudgetsService {
       );
       const [b, e] = await Promise.all([
         this.repository.findByMonth(userId, month),
-        this.expensesService.getAnalysisExpenseStats(userId, month),
+        this.expensesQueryService.getAnalysisExpenseStats(userId, month),
       ]);
       budgetDoc = b;
       expenseStats = e;

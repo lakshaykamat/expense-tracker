@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ExpensesService } from '../expenses/application/expenses.service';
+import { ExpensesQueryService } from '../modules/expenses/service/expenses-query.service';
 import { BudgetsService } from '../budgets/application/budgets.service';
 import { convertToCSV } from '../common/utils/csv.utils';
 import {
@@ -34,7 +34,7 @@ export class UsersService {
   ];
 
   constructor(
-    private readonly expensesService: ExpensesService,
+    private readonly expensesQueryService: ExpensesQueryService,
     private readonly budgetsService: BudgetsService,
   ) {}
 
@@ -50,7 +50,7 @@ export class UsersService {
     }
     
     const [expenses, budgets] = await Promise.all([
-      this.expensesService.findAllForExport(userId),
+      this.expensesQueryService.findAllForExport(userId),
       this.budgetsService.findAllForExport(userId),
     ]);
 

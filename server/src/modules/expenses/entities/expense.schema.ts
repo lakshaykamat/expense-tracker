@@ -25,10 +25,8 @@ export class Expense {
 
   _id: Types.ObjectId;
 }
+
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);
 
-// Add indexes for performance
-// Compound index covers queries with userId, userId+date, and sorting by date
 ExpenseSchema.index({ userId: 1, date: -1 });
-// Index for category breakdown queries
 ExpenseSchema.index({ userId: 1, date: -1, category: 1 });

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { BudgetsService } from './application/budgets.service';
 import { Budget } from './domain/schemas/budget.schema';
-import { ExpensesService } from '../expenses/application/expenses.service';
+import { ExpensesQueryService } from '../modules/expenses/service/expenses-query.service';
 
 const mockConnection = {
   startSession: () =>
@@ -21,7 +21,7 @@ describe('BudgetsService', () => {
         BudgetsService,
         { provide: getModelToken(Budget.name), useValue: {} },
         { provide: getConnectionToken(), useValue: mockConnection },
-        { provide: ExpensesService, useValue: {} },
+        { provide: ExpensesQueryService, useValue: {} },
       ],
     }).compile();
 

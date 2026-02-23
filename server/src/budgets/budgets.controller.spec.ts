@@ -3,7 +3,7 @@ import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { BudgetsController } from './presentation/controllers/budgets.controller';
 import { BudgetsService } from './application/budgets.service';
 import { Budget } from './domain/schemas/budget.schema';
-import { ExpensesService } from '../expenses/application/expenses.service';
+import { ExpensesQueryService } from '../modules/expenses/service/expenses-query.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 const mockConnection = {
@@ -24,7 +24,7 @@ describe('BudgetsController', () => {
         BudgetsService,
         { provide: getModelToken(Budget.name), useValue: {} },
         { provide: getConnectionToken(), useValue: mockConnection },
-        { provide: ExpensesService, useValue: {} },
+        { provide: ExpensesQueryService, useValue: {} },
       ],
     })
       .overrideGuard(JwtAuthGuard)

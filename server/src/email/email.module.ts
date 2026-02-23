@@ -7,7 +7,7 @@ import { User, UserSchema } from '../auth/schemas/user.schema';
 import {
   Expense,
   ExpenseSchema,
-} from '../expenses/domain/schemas/expense.schema';
+} from '../modules/expenses/entities/expense.schema';
 
 @Module({
   imports: [
