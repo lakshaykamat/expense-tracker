@@ -1,18 +1,20 @@
 "use client";
 
-import { lazy, Suspense, useState } from "react";
-import { useBudgets } from "@/hooks/useBudgets";
-import { useBudgetDialog } from "@/hooks/useBudgetDialog";
-import { useBudgetHandlers } from "@/hooks/useBudgetHandlers";
-import { useMonthSelection } from "@/hooks/useMonthSelection";
-import { BudgetDisplay } from "@/components/budget-display";
-import { PageLayout } from "@/components/page-layout";
-import { BudgetFab } from "@/components/budget-fab";
+import { lazy, Suspense } from "react";
+import {
+  useBudgets,
+  useBudgetDialog,
+  useBudgetHandlers,
+  BudgetDisplay,
+  BudgetFab,
+} from "@/features/budgets";
+import { useMonthSelection } from "@/shared/hooks/use-month-selection";
+import { PageLayout } from "@/shared/components/page-layout";
 import { Plus, Pencil } from "lucide-react";
 
 // Lazy load drawer component (only loads when needed)
 const BudgetDrawer = lazy(() =>
-  import("@/components/budget-drawer").then((module) => ({
+  import("@/features/budgets").then((module) => ({
     default: module.BudgetDrawer,
   }))
 );
@@ -30,7 +32,8 @@ export default function BudgetsPage() {
     dialogHook;
 
   const {
-    handleBudgetSubmit,
+    handleBudgetSubmitWithLoading,
+    isSubmitting,
     handleEditBudget,
     handleDeleteBudget,
     handleUpdateItem,
@@ -39,14 +42,6 @@ export default function BudgetsPage() {
     budgets: budgetsHook,
     dialog: dialogHook,
   });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleBudgetSubmitWithLoading = async (data: any) => {
-    setIsSubmitting(true);
-    await handleBudgetSubmit(data);
-    setIsSubmitting(false);
-  };
 
   return (
     <PageLayout>

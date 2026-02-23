@@ -1,16 +1,12 @@
 "use client";
 
-import { PageHeader } from "@/components/page-header";
-import { PageLayout } from "@/components/page-layout";
-import { useAnalysisStats } from "@/hooks/useAnalysisStats";
-import { useMonthSelection } from "@/hooks/useMonthSelection";
-import { ErrorDisplay } from "@/components/error-display";
-import { AnalysisSkeleton } from "@/components/analysis-skeleton";
-import { EmptyState } from "@/components/empty-state";
-import { BudgetOverviewCard } from "@/components/budget-overview-card";
-import { TopCategoriesCard } from "@/components/top-categories-card";
-import { TopExpensesCard } from "@/components/top-expenses-card";
-import { WeeklyExpensesCard } from "@/components/weekly-expenses-card";
+import { PageHeader } from "@/shared/components/page-header";
+import { PageLayout } from "@/shared/components/page-layout";
+import { useAnalysisStats, TopCategoriesCard, TopExpensesCard, WeeklyExpensesCard, AnalysisSkeleton } from "@/features/analysis";
+import { BudgetOverviewCard } from "@/features/budgets";
+import { useMonthSelection } from "@/shared/hooks/use-month-selection";
+import { ErrorDisplay } from "@/shared/components/error-display";
+import { EmptyState } from "@/shared/components/empty-state";
 
 export const dynamic = "force-dynamic";
 

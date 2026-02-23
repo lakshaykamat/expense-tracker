@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { PageLayout } from "@/components/page-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ErrorDisplay } from "@/components/error-display";
-import { ProfileSkeleton } from "@/components/profile-skeleton";
-import { Spinner } from "@/components/ui/spinner";
-import { useUser } from "@/hooks/useUser";
-import { AuthService } from "@/lib/auth-service";
-import { usersApi } from "@/lib/users-api";
+import { PageLayout } from "@/shared/components/page-layout";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { ErrorDisplay } from "@/shared/components/error-display";
+import { ProfileSkeleton } from "@/shared/components/profile-skeleton";
+import { Spinner } from "@/shared/components/ui/spinner";
+import { useUser } from "@/features/auth";
+import { AuthService } from "@/lib/auth";
+import { usersApi } from "@/lib/api";
 import { LogOut, Download, Sun, Moon } from "lucide-react";
 
 export const dynamic = "force-dynamic";

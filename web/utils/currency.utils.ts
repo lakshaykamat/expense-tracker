@@ -25,7 +25,7 @@ export function formatCurrency(amount: number): string {
   }
 }
 
-export function formatCurrencyWithDecimals(amount: number): string {
+function formatCurrencyWithDecimals(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount)) {
     return '₹0.00';
   }

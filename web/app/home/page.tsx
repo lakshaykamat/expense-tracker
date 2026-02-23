@@ -1,18 +1,22 @@
 'use client'
 
 import React, { lazy, Suspense, useState } from 'react'
-import { ExpenseList } from '@/components/expense-list'
-import { PageLayout } from '@/components/page-layout'
-import { useExpenses } from '@/hooks/useExpenses'
-import { useExpenseDialog } from '@/hooks/useExpenseDialog'
-import { useExpenseHandlers } from '@/hooks/useExpenseHandlers'
-import { useMonthSelection } from '@/hooks/useMonthSelection'
-import { DeleteExpenseDialog } from '@/components/delete-expense-dialog'
-import { ExpenseListSkeleton } from '@/components/expense-list-skeleton'
-import type { Expense } from '@/types'
+import {
+  ExpenseList,
+  DeleteExpenseDialog,
+  useExpenses,
+  useExpenseDialog,
+  useExpenseHandlers,
+  useDeleteExpenseDialog,
+  ExpenseListSkeleton,
+} from '@/features/expenses'
+import { PageLayout } from '@/shared/components/page-layout'
+import { PageFab } from '@/shared/components/page-fab'
+import { useMonthSelection } from '@/shared/hooks/use-month-selection'
+import { Plus } from 'lucide-react'
 
 // Lazy load dialog component (only loads when needed)
-const ExpenseDialog = lazy(() => import('@/components/expense-dialog').then(module => ({ default: module.ExpenseDialog })))
+const ExpenseDialog = lazy(() => import('@/features/expenses').then(module => ({ default: module.ExpenseDialog })))
 
 export const dynamic = "force-dynamic";
 
@@ -20,19 +24,17 @@ export default function HomePage() {
   const { selectedMonth, setSelectedMonth, availableMonths } = useMonthSelection()
   const expensesHook = useExpenses(selectedMonth)
   const { expenses, loading, error, fetchExpenses } = expensesHook
-  
+
   const dialogHook = useExpenseDialog()
   const { isDialogOpen, editingExpense, openAddDialog, openEditDialog, setIsDialogOpen } = dialogHook
-  
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const { handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useExpenseHandlers({
     expenses: expensesHook,
     dialog: dialogHook,
   })
+  const deleteDialog = useDeleteExpenseDialog(handleDeleteExpense)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleAddExpenseWithLoading = async (data: any) => {
     setIsSubmitting(true)
@@ -46,32 +48,13 @@ export default function HomePage() {
     setIsSubmitting(false)
   }
 
-  const handleDeleteClick = (expense: Expense) => {
-    setExpenseToDelete(expense)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!expenseToDelete || isDeleting) return
-    
-    setIsDeleting(true)
-    await handleDeleteExpense(expenseToDelete._id)
-    setIsDeleting(false)
-    setDeleteDialogOpen(false)
-    setExpenseToDelete(null)
-  }
-
-  const handleDeleteDialogClose = (open: boolean) => {
-    if (!open && !isDeleting) {
-      setDeleteDialogOpen(false)
-      setExpenseToDelete(null)
-    }
-  }
-
   if (loading && expenses.length === 0) {
     return (
       <PageLayout>
         <ExpenseListSkeleton />
+        <PageFab onClick={openAddDialog}>
+          <Plus className="w-6 h-6" />
+        </PageFab>
       </PageLayout>
     )
   }
@@ -80,7 +63,7 @@ export default function HomePage() {
     <PageLayout>
       <ExpenseList
         expenses={expenses}
-        onDelete={handleDeleteClick}
+        onDelete={deleteDialog.openDeleteDialog}
         onEdit={openEditDialog}
         onAddExpense={openAddDialog}
         isLoading={loading}
@@ -112,15 +95,19 @@ export default function HomePage() {
         </Suspense>
       )}
 
-      {expenseToDelete && (
+      {deleteDialog.expenseToDelete && (
         <DeleteExpenseDialog
-          open={deleteDialogOpen}
-          onOpenChange={handleDeleteDialogClose}
-          onConfirm={handleDeleteConfirm}
-          isLoading={isDeleting}
-          expenseTitle={expenseToDelete.title}
+          open={deleteDialog.deleteDialogOpen}
+          onOpenChange={deleteDialog.onOpenChange}
+          onConfirm={deleteDialog.handleDeleteConfirm}
+          isLoading={deleteDialog.isDeleting}
+          expenseTitle={deleteDialog.expenseToDelete.title}
         />
       )}
+
+      <PageFab onClick={openAddDialog}>
+        <Plus className="w-6 h-6" />
+      </PageFab>
     </PageLayout>
   )
 }

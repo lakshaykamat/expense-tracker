@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navigation } from "@/components/navigation";
-import { MobileNavigation } from "@/components/mobile-navigation";
-import { MobileHeader } from "@/components/mobile-header";
+import { Navigation } from "@/shared/components/navigation";
+import { MobileNavigation } from "@/shared/components/mobile-navigation";
+import { MobileHeader } from "@/shared/components/mobile-header";
 import { SWRProvider } from "./providers/swr-provider";
 import { ThemeProvider } from "./providers/theme-provider";
 

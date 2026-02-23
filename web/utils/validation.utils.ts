@@ -40,7 +40,7 @@ export function sanitizeAmount(amount: number | string): number {
   return Math.max(0, Math.min(999999999, Math.round(num * 100) / 100));
 }
 
-export function isValidDateString(dateString: string): boolean {
+function isValidDateString(dateString: string): boolean {
   if (!dateString || typeof dateString !== 'string') {
     return false;
   }

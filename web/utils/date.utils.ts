@@ -32,13 +32,30 @@ export function formatMonthDisplay(monthString: string): string {
   if (!monthString || typeof monthString !== 'string') {
     return 'Invalid Month';
   }
-  
+
   try {
     const date = new Date(monthString + '-01');
     if (isNaN(date.getTime())) {
       return 'Invalid Month';
     }
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  } catch {
+    return 'Invalid Month';
+  }
+}
+
+/** Alias for formatMonthDisplay for consistent naming (e.g. in headers/dropdowns). */
+export function formatMonth(monthString: string): string {
+  return formatMonthDisplay(monthString);
+}
+
+/** Short month label for dropdowns (e.g. "Jan 2025"). */
+export function formatMonthShort(monthString: string): string {
+  if (!monthString || typeof monthString !== 'string') return 'Invalid Month';
+  try {
+    const date = new Date(monthString + '-01');
+    if (isNaN(date.getTime())) return 'Invalid Month';
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   } catch {
     return 'Invalid Month';
   }

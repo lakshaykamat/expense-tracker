@@ -8,7 +8,7 @@ export function getProgressColor(percentage: number): string {
   return 'bg-green-500';
 }
 
-export function getProgressVariant(percentage: number): 'default' | 'destructive' | 'warning' {
+function getProgressVariant(percentage: number): 'default' | 'destructive' | 'warning' {
   if (percentage >= 90) return 'destructive';
   if (percentage >= 70) return 'warning';
   return 'default';
