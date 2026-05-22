@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { ApiResponse, Expense, CreateExpenseData, UpdateExpenseData } from '@/types'
+import type { ApiResponse, Expense, CreateExpenseData, UpdateExpenseData, BulkImportResult } from '@/types'
 import { retryWithBackoff } from '@/lib/utils/retry'
 
 export const expensesApi = {
@@ -25,6 +25,11 @@ export const expensesApi = {
       const response = await api.post('/expenses', data)
       return response.data
     })
+  },
+
+  bulkCreate: async (expenses: CreateExpenseData[]): Promise<BulkImportResult> => {
+    const response = await api.post('/expenses/bulk', { expenses })
+    return response.data?.data ?? response.data
   },
 
   update: async (id: string, data: UpdateExpenseData): Promise<ApiResponse<Expense>> => {

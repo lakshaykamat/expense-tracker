@@ -25,3 +25,8 @@ export interface UpdateExpenseData {
   category?: string;
   date?: string;
 }
+
+export interface BulkImportResult {
+  message: string;
+  expenses: Expense[];
+}

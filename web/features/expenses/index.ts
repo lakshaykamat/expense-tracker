@@ -4,6 +4,7 @@ export { ExpenseDialog } from "./components/expense-dialog";
 export { DeleteExpenseDialog } from "./components/delete-expense-dialog";
 export { SwipeableExpenseItem } from "./components/swipeable-expense-item";
 export { ExpenseListSkeleton } from "./components/expense-list-skeleton";
+export { BulkImportDialog } from "./components/bulk-import-dialog";
 export { useExpenses } from "./hooks/use-expenses";
 export { useExpenseDialog } from "./hooks/use-expense-dialog";
 export { useExpenseForm } from "./hooks/use-expense-form";

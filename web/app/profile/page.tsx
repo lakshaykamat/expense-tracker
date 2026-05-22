@@ -12,7 +12,8 @@ import { Spinner } from "@/shared/components/ui/spinner";
 import { useUser } from "@/features/auth";
 import { AuthService } from "@/lib/auth";
 import { usersApi } from "@/lib/api";
-import { LogOut, Download, Sun, Moon } from "lucide-react";
+import { LogOut, Download, Upload, Sun, Moon } from "lucide-react";
+import { BulkImportDialog } from "@/features/expenses";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +142,12 @@ export default function ProfilePage() {
                 )}
                 {exporting ? "Exporting…" : "Export CSV"}
               </Button>
+              <BulkImportDialog>
+                <Button variant="ghost" className="w-full justify-start gap-3">
+                  <Upload className="w-4 h-4" />
+                  Import CSV
+                </Button>
+              </BulkImportDialog>
             </div>
 
             {/* Danger zone */}
