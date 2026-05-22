@@ -160,10 +160,46 @@ function FilePicker({
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFile: (file: File) => void;
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) onFile(file);
+  };
+
   return (
-    <label className="flex flex-col items-center justify-center gap-2 py-10 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent/30 transition-colors">
-      <Upload className="w-6 h-6 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">Click to choose a CSV file</span>
+    <label
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col items-center justify-center gap-2 py-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+        isDragging
+          ? "border-primary bg-primary/5"
+          : "border-border hover:bg-accent/30"
+      }`}
+    >
+      <Upload className={`w-6 h-6 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+      <span className="text-sm text-muted-foreground">
+        {isDragging ? "Drop CSV file here" : "Drag and drop a CSV file, or click to choose"}
+      </span>
       <input
         ref={fileInputRef}
         type="file"
