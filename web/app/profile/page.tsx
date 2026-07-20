@@ -12,7 +12,8 @@ import { Spinner } from "@/shared/components/ui/spinner";
 import { useUser } from "@/features/auth";
 import { AuthService } from "@/lib/auth";
 import { usersApi } from "@/lib/api";
-import { LogOut, Download, Upload, Sun, Moon } from "lucide-react";
+import { LogOut, Download, Upload, Sun, Moon, Code2 } from "lucide-react";
+import Link from "next/link";
 import { BulkImportDialog } from "@/features/expenses";
 
 export const dynamic = "force-dynamic";
@@ -148,6 +149,12 @@ export default function ProfilePage() {
                   Import CSV
                 </Button>
               </BulkImportDialog>
+              <Link href="/developer">
+                <Button variant="ghost" className="w-full justify-start gap-3">
+                  <Code2 className="w-4 h-4" />
+                  Developer API
+                </Button>
+              </Link>
             </div>
 
             {/* Danger zone */}
