@@ -18,6 +18,9 @@ export class User {
   @Prop({ default: new Date() })
   lastLoginAt?: Date;
 
+  @Prop({ index: true, sparse: true })
+  apiKey?: string;
+
   _id: Types.ObjectId;
 }
 
