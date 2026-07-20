@@ -2,12 +2,14 @@ import {
   IsString,
   IsNumber,
   IsOptional,
+  IsIn,
   Min,
   MinLength,
   MaxLength,
   IsDateString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { EXPENSE_CATEGORIES } from '../constants/categories.js';
 
 const trimString = () =>
   Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -29,10 +31,11 @@ export class CreateExpenseDto {
   @trimString()
   description?: string;
 
-  @IsString()
   @IsOptional()
-  @MaxLength(50)
   @trimString()
+  @IsIn(EXPENSE_CATEGORIES, {
+    message: `category must be one of: ${EXPENSE_CATEGORIES.join(', ')}`,
+  })
   category?: string;
 
   @IsDateString()

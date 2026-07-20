@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useUser } from "@/features/auth";
 import { usersApi } from "@/lib/api";
+import { EXPENSE_CATEGORIES } from "@/constants";
 import { PageLayout } from "@/shared/components/page-layout";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -125,7 +126,7 @@ const expense = await res.json();`,
     bodyParams: [
       { name: "title", type: "string", required: true, description: "Expense title. 3–100 characters." },
       { name: "amount", type: "number", required: true, description: "Expense amount. Must be at least 0.01." },
-      { name: "category", type: "string", description: "Category label. Up to 50 characters." },
+      { name: "category", type: "string", description: "Category label. Must be one of the standard categories listed below." },
       { name: "description", type: "string", description: "Free-text note. Up to 500 characters." },
       { name: "date", type: "string", description: "ISO 8601 date (YYYY-MM-DD). Defaults to now if omitted." },
     ],
@@ -165,7 +166,7 @@ const expense = await res.json();`,
     bodyParams: [
       { name: "title", type: "string", description: "New title. 3–100 characters." },
       { name: "amount", type: "number", description: "New amount. Must be at least 0.01." },
-      { name: "category", type: "string", description: "New category. Up to 50 characters." },
+      { name: "category", type: "string", description: "New category. Must be one of the standard categories listed below." },
       { name: "description", type: "string", description: "New note. Up to 500 characters." },
       { name: "date", type: "string", description: "New ISO 8601 date (YYYY-MM-DD)." },
     ],
@@ -363,6 +364,7 @@ function EndpointDoc({ endpoint }: { endpoint: Endpoint }) {
 const NAV = [
   { id: "authentication", label: "Authentication" },
   { id: "expense-object", label: "The Expense object" },
+  { id: "categories", label: "Categories" },
   ...ENDPOINTS.map((e) => ({ id: e.id, label: e.title })),
   { id: "errors", label: "Errors" },
 ];
@@ -562,7 +564,7 @@ export default function DeveloperPage() {
                 { name: "_id", type: "string", description: "Unique identifier for the expense." },
                 { name: "title", type: "string", description: "Expense title." },
                 { name: "amount", type: "number", description: "Expense amount." },
-                { name: "category", type: "string", description: "Category label, if set." },
+                { name: "category", type: "string", description: "Category label, if set. One of the standard categories listed below." },
                 { name: "description", type: "string", description: "Free-text note, if set." },
                 { name: "date", type: "string", description: "Expense date (ISO 8601)." },
                 { name: "createdAt", type: "string", description: "When the record was created." },
@@ -573,6 +575,22 @@ export default function DeveloperPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Example</p>
               <CodeBlock code={EXPENSE_OBJECT} language="json" />
             </div>
+          </div>
+        </Section>
+
+        {/* Categories */}
+        <Section id="categories" title="Categories">
+          <p className="text-sm text-muted-foreground">
+            The <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">category</code> field
+            must be one of the following standard categories. Use these exact labels so your expenses
+            appear correctly in category breakdowns and reports.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {EXPENSE_CATEGORIES.map((category) => (
+              <Badge key={category} variant="secondary" className="font-mono text-xs">
+                {category}
+              </Badge>
+            ))}
           </div>
         </Section>
 

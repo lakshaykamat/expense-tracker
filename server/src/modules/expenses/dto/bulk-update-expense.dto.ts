@@ -6,9 +6,11 @@ import {
   IsString,
   IsNumber,
   IsOptional,
+  IsIn,
   Min,
   IsDateString,
 } from 'class-validator';
+import { EXPENSE_CATEGORIES } from '../constants/categories.js';
 
 export class BulkUpdateExpenseItemDto {
   @IsString()
@@ -22,8 +24,10 @@ export class BulkUpdateExpenseItemDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
   @IsOptional()
+  @IsIn(EXPENSE_CATEGORIES, {
+    message: `category must be one of: ${EXPENSE_CATEGORIES.join(', ')}`,
+  })
   category?: string;
 
   @IsDateString()
