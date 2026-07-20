@@ -3,6 +3,7 @@ export interface User {
   email: string;
   createdAt: string;
   lastLoginAt?: string;
+  apiKey?: string | null;
 }
 
 export interface LoginCredentials {
