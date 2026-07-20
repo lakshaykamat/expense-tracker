@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { randomBytes } from 'crypto';
 import { JwtService } from './jwt.service';
 import type {
   LoginDto,
@@ -152,7 +153,22 @@ export class AuthService {
       email: user.email,
       createdAt: (user as any).createdAt,
       lastLoginAt: user.lastLoginAt,
+      apiKey: user.apiKey ?? null,
     };
+  }
+
+  async findByApiKey(key: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ apiKey: key });
+  }
+
+  async generateApiKey(userId: string): Promise<string> {
+    const key = `et_${randomBytes(32).toString('hex')}`;
+    await this.userModel.findByIdAndUpdate(userId, { apiKey: key });
+    return key;
+  }
+
+  async revokeApiKey(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { $unset: { apiKey: '' } });
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
