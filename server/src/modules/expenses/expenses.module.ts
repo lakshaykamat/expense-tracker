@@ -5,6 +5,7 @@ import { ExpensesRepository } from './repository/expenses.repository';
 import { ExpensesCrudService } from './service/expenses-crud.service';
 import { ExpensesQueryService } from './service/expenses-query.service';
 import { ExpensesController } from './controller/expenses.controller';
+import { ExpensesPublicController } from './controller/expenses-public.controller';
 import { AuthModule } from '../../auth/auth.module';
 
 @Module({
@@ -12,7 +13,7 @@ import { AuthModule } from '../../auth/auth.module';
     MongooseModule.forFeature([{ name: Expense.name, schema: ExpenseSchema }]),
     AuthModule,
   ],
-  controllers: [ExpensesController],
+  controllers: [ExpensesController, ExpensesPublicController],
   providers: [ExpensesRepository, ExpensesCrudService, ExpensesQueryService],
   exports: [ExpensesQueryService, ExpensesCrudService],
 })
