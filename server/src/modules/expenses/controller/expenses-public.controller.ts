@@ -18,6 +18,7 @@ import { CreateExpenseDto } from '../dto/create-expense.dto';
 import { UpdateExpenseDto } from '../dto/update-expense.dto';
 import { BulkUpsertExpenseDto } from '../dto/bulk-upsert-expense.dto';
 import { QueryExpenseDto } from '../dto/query-expense.dto';
+import { EXPENSE_CATEGORIES } from '../constants/categories';
 
 @Controller('api/v1/expenses')
 @UseGuards(ApiKeyGuard)
@@ -37,6 +38,11 @@ export class ExpensesPublicController {
       query.groupBy,
       query.limit,
     );
+  }
+
+  @Get('categories')
+  findCategories() {
+    return { categories: EXPENSE_CATEGORIES };
   }
 
   @Get(':id')
