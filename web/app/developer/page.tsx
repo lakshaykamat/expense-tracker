@@ -76,6 +76,32 @@ const indent = (json: string, spaces: number) =>
 
 const ENDPOINTS: Endpoint[] = [
   {
+    id: "list-categories",
+    method: "GET",
+    path: "/api/v1/categories",
+    title: "List categories",
+    description: "Returns the standard categories accepted by expense create and update endpoints.",
+    curl: `curl "${DISPLAY_URL}/api/v1/categories" \\
+  -H "x-api-key: YOUR_API_KEY"`,
+    js: `const res = await fetch("${DISPLAY_URL}/api/v1/categories", {
+  headers: { "x-api-key": "YOUR_API_KEY" },
+});
+const { data: { categories } } = await res.json();`,
+    responseStatus: "200 OK",
+    response: `{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "categories": [
+      "Food",
+      "Fast Food",
+      "Health & Fitness"
+    ]
+  }
+}`,
+  },
+  {
     id: "list-expenses",
     method: "GET",
     path: "/api/v1/expenses",
