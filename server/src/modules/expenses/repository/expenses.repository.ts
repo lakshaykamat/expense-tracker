@@ -83,6 +83,14 @@ export class ExpensesRepository {
     return this.expenseModel.findOne(query).lean().exec();
   }
 
+  async findByIds(ids: string[], userId: string) {
+    const userIdQuery = buildUserIdQuery(userId);
+    return this.expenseModel
+      .find({ _id: { $in: toObjectIds(ids) }, ...userIdQuery })
+      .lean()
+      .exec();
+  }
+
   async update(id: string, userId: string, updateData: Record<string, unknown>) {
     const query = buildIdAndUserIdQuery(id, userId);
     return this.expenseModel

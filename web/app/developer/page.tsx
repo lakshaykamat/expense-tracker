@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useUser } from "@/features/auth";
 import { usersApi } from "@/lib/api";
+import { CookieUtils } from "@/lib/auth/cookie-utils";
 import { EXPENSE_CATEGORIES } from "@/constants";
 import { PageLayout } from "@/shared/components/page-layout";
 import { Spinner } from "@/shared/components/ui/spinner";
@@ -155,6 +156,54 @@ const expense = await res.json();`,
 const expense = await res.json();`,
     responseStatus: "201 Created",
     response: EXPENSE_OBJECT,
+  },
+  {
+    id: "bulk-upsert-expenses",
+    method: "POST",
+    path: "/api/v1/expenses/bulk-upsert",
+    title: "Bulk create or update expenses",
+    description: "Creates items without an _id and updates items with an _id. Every supplied ID must belong to your API key's user; otherwise the request fails without creating new expenses.",
+    bodyParams: [
+      { name: "expenses", type: "array", required: true, description: "1–100 expense objects. Include _id only when updating an existing expense." },
+      { name: "expenses[]._id", type: "string", description: "Existing expense ID. Omit to create a new expense." },
+      { name: "expenses[].title", type: "string", required: true, description: "Expense title. 3–100 characters." },
+      { name: "expenses[].amount", type: "number", required: true, description: "Expense amount. Must be at least 0.01." },
+      { name: "expenses[].category", type: "string", description: "Standard category label." },
+      { name: "expenses[].description", type: "string", description: "Free-text note. Up to 500 characters." },
+      { name: "expenses[].date", type: "string", description: "ISO 8601 date (YYYY-MM-DD). Defaults to now when creating." },
+    ],
+    curl: `curl -X POST "${DISPLAY_URL}/api/v1/expenses/bulk-upsert" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "expenses": [
+      { "_id": "665f1e2a9c4d1a0012ab34cd", "title": "Coffee", "amount": 5.0, "category": "Food", "date": "2026-07-20" },
+      { "title": "Bus fare", "amount": 2.5, "category": "Transport", "date": "2026-07-21" }
+    ]
+  }'`,
+    js: `const res = await fetch("${DISPLAY_URL}/api/v1/expenses/bulk-upsert", {
+  method: "POST",
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    expenses: [
+      { _id: "665f1e2a9c4d1a0012ab34cd", title: "Coffee", amount: 5.0, category: "Food", date: "2026-07-20" },
+      { title: "Bus fare", amount: 2.5, category: "Transport", date: "2026-07-21" },
+    ],
+  }),
+});
+const result = await res.json();`,
+    responseStatus: "201 Created",
+    response: `{
+  "created": 1,
+  "updated": 1,
+  "expenses": [
+    ${indent(EXPENSE_OBJECT, 4)},
+    ${indent(EXPENSE_OBJECT, 4)}
+  ]
+}`,
   },
   {
     id: "update-expense",
@@ -370,10 +419,15 @@ const NAV = [
 ];
 
 export default function DeveloperPage() {
-  const { user, loading, refetch } = useUser();
+  const [hasAuthToken, setHasAuthToken] = useState(false);
+  const { user, refetch } = useUser(hasAuthToken);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    setHasAuthToken(CookieUtils.hasAuthToken());
+  }, []);
 
   const copyKey = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -402,16 +456,6 @@ export default function DeveloperPage() {
       setWorking(false);
     }
   };
-
-  if (loading) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center py-20">
-          <Spinner />
-        </div>
-      </PageLayout>
-    );
-  }
 
   return (
     <PageLayout>
@@ -443,7 +487,7 @@ export default function DeveloperPage() {
         </nav>
 
         {/* API key management */}
-        <Card>
+        {hasAuthToken && user ? <Card>
           <CardContent className="space-y-4 p-5 sm:p-6">
             <div className="flex items-center gap-2">
               <KeyRound className="h-4 w-4 text-muted-foreground" />
@@ -533,7 +577,7 @@ export default function DeveloperPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card> : null}
 
         {/* Authentication */}
         <Section id="authentication" title="Authentication">

@@ -16,6 +16,7 @@ import { ExpensesCrudService } from '../service/expenses-crud.service';
 import { ExpensesQueryService } from '../service/expenses-query.service';
 import { CreateExpenseDto } from '../dto/create-expense.dto';
 import { UpdateExpenseDto } from '../dto/update-expense.dto';
+import { BulkUpsertExpenseDto } from '../dto/bulk-upsert-expense.dto';
 import { QueryExpenseDto } from '../dto/query-expense.dto';
 
 @Controller('api/v1/expenses')
@@ -46,6 +47,14 @@ export class ExpensesPublicController {
   @Post()
   create(@Body() dto: CreateExpenseDto, @LoggedInUser() user: UserDocument) {
     return this.crudService.create(dto, user._id.toString());
+  }
+
+  @Post('bulk-upsert')
+  bulkUpsert(
+    @Body() body: BulkUpsertExpenseDto,
+    @LoggedInUser() user: UserDocument,
+  ) {
+    return this.crudService.bulkUpsert(body.expenses, user._id.toString());
   }
 
   @Patch(':id')

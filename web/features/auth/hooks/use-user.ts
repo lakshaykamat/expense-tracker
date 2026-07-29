@@ -3,7 +3,7 @@ import { AuthService } from '@/lib/auth'
 import { User } from '@/types'
 import { retryWithBackoff } from '@/helpers/api.helpers'
 
-export function useUser() {
+export function useUser(enabled = true) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,8 +25,14 @@ export function useUser() {
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      setUser(null)
+      setError(null)
+      setLoading(false)
+      return
+    }
     fetchUser()
-  }, [fetchUser])
+  }, [enabled, fetchUser])
 
   return {
     user,
@@ -35,4 +41,3 @@ export function useUser() {
     refetch: fetchUser
   }
 }
-

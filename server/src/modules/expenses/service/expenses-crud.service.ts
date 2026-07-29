@@ -55,6 +55,70 @@ export class ExpensesCrudService {
     return { message: `${result.length} expenses created successfully`, expenses: result };
   }
 
+  async bulkUpsert(
+    dtos: Array<{
+      _id?: string;
+      title: string;
+      amount: number;
+      description?: string;
+      category?: string;
+      date?: string;
+    }>,
+    userId: string,
+  ) {
+    if (!isValidObjectId(userId)) throw new BadRequestException('Invalid user ID format');
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('Expenses array is required and cannot be empty');
+    }
+    if (dtos.length > BULK_LIMIT) {
+      throw new BadRequestException(`Cannot upsert more than ${BULK_LIMIT} expenses at once`);
+    }
+
+    const updates = dtos.filter((expense) => expense._id);
+    const updateIds = updates.map((expense) => expense._id!);
+    if (new Set(updateIds).size !== updateIds.length) {
+      throw new BadRequestException('An expense can only appear once in a bulk upsert request');
+    }
+    if (updateIds.some((id) => !isValidObjectId(id))) {
+      throw new BadRequestException('Invalid expense ID format');
+    }
+
+    if (updateIds.length > 0) {
+      const existingExpenses = await this.repository.findByIds(updateIds, userId);
+      if (existingExpenses.length !== updateIds.length) {
+        throw new NotFoundException('One or more expenses were not found');
+      }
+    }
+
+    const updatedExpenses = await Promise.all(
+      updates.map(async ({ _id, ...expense }) => {
+        const updatedExpense = await this.repository.update(
+          _id!,
+          userId,
+          prepareExpenseForUpdate(expense, true),
+        );
+        if (!updatedExpense) throw new NotFoundException('Expense not found');
+        return updatedExpense;
+      }),
+    );
+    const createExpenses = dtos.filter((expense) => !expense._id);
+    const userIdObj = toObjectId(userId);
+    const createdExpenses = createExpenses.length
+      ? await this.repository.bulkCreate(
+          createExpenses.map((expense) =>
+            prepareExpenseForCreate(expense, userId, userIdObj),
+          ),
+        )
+      : [];
+
+    return {
+      message: `${createdExpenses.length} expenses created and ${updatedExpenses.length} expenses updated successfully`,
+      created: createdExpenses.length,
+      updated: updatedExpenses.length,
+      expenses: [...updatedExpenses, ...createdExpenses],
+    };
+  }
+
   async findOne(id: string, userId: string) {
     if (!isValidObjectId(id) || !isValidObjectId(userId)) {
       throw new BadRequestException('Invalid ID format');

@@ -38,7 +38,10 @@ export function prepareExpenseForCreate(
   };
 }
 
-export function prepareExpenseForUpdate(dto: Record<string, unknown>): Record<string, unknown> {
+export function prepareExpenseForUpdate(
+  dto: Record<string, unknown>,
+  preserveOmittedOptionalFields = false,
+): Record<string, unknown> {
   const updateData: Record<string, unknown> = {};
   const unsetFields: Record<string, string> = {};
 
@@ -50,7 +53,7 @@ export function prepareExpenseForUpdate(dto: Record<string, unknown>): Record<st
       if (t === undefined || t === '') unsetFields.description = '';
       else updateData.description = t;
     }
-  } else unsetFields.description = '';
+  } else if (!preserveOmittedOptionalFields) unsetFields.description = '';
   if ('category' in dto) {
     if (dto.category === null || dto.category === '') unsetFields.category = '';
     else {
@@ -58,7 +61,7 @@ export function prepareExpenseForUpdate(dto: Record<string, unknown>): Record<st
       if (t === undefined || t === '') unsetFields.category = '';
       else updateData.category = t;
     }
-  } else unsetFields.category = '';
+  } else if (!preserveOmittedOptionalFields) unsetFields.category = '';
   if (dto.date) {
     const date = normalizeDateToUTC(String(dto.date));
     if (isNaN(date.getTime())) throw new Error('Invalid date format');
