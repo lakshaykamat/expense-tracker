@@ -283,6 +283,67 @@ const result = await res.json();`,
   "message": "Expense deleted successfully"
 }`,
   },
+  {
+    id: "get-analysis-stats",
+    method: "GET",
+    path: "/budgets/analysis/stats",
+    title: "Get analysis statistics",
+    description:
+      "Returns spending and budget analysis for the selected month, including daily averages, top categories, top expenses, and weekly totals. Requires a Bearer access token. A budget is optional; statistics are still returned when none exists.",
+    queryParams: [
+      { name: "month", type: "string", required: true, description: "Month to analyze in YYYY-MM format (e.g. 2026-07)." },
+    ],
+    curl: `curl "${DISPLAY_URL}/budgets/analysis/stats?month=2026-07" \\
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"`,
+    js: `const res = await fetch(
+  "${DISPLAY_URL}/budgets/analysis/stats?month=2026-07",
+  { headers: { Authorization: "Bearer YOUR_ACCESS_TOKEN" } }
+);
+const { data: analysis } = await res.json();`,
+    responseStatus: "200 OK",
+    response: `{
+  "success": true,
+  "statusCode": 200,
+  "message": "Resource retrieved successfully",
+  "data": {
+    "budget": {
+      "_id": "665f1e2a9c4d1a0012ab5678",
+      "month": "2026-07",
+      "essentialItems": [
+        { "name": "Rent", "amount": 1200 },
+        { "name": "Groceries", "amount": 400 }
+      ],
+      "totalBudget": 1600,
+      "spentAmount": 950,
+      "createdAt": "2026-07-01T08:15:30.123Z",
+      "updatedAt": "2026-07-20T08:15:30.123Z"
+    },
+    "totalBudget": 1600,
+    "totalExpenses": 950,
+    "remainingBudget": 650,
+    "budgetUsedPercentage": 59.38,
+    "budgetExists": true,
+    "dailyAverageSpend": 47.5,
+    "topCategories": [
+      { "category": "Food", "amount": 500 },
+      { "category": "Transport", "amount": 250 }
+    ],
+    "topExpenses": [
+      { "title": "Monthly groceries", "amount": 320 },
+      { "title": "Train pass", "amount": 150 }
+    ],
+    "weeklyExpenses": [
+      { "week": 27, "amount": 200, "startDate": "2026-06-29", "endDate": "2026-07-05" },
+      { "week": 28, "amount": 350, "startDate": "2026-07-06", "endDate": "2026-07-12" },
+      { "week": 29, "amount": 250, "startDate": "2026-07-13", "endDate": "2026-07-19" },
+      { "week": 30, "amount": 150, "startDate": "2026-07-20", "endDate": "2026-07-26" },
+      { "week": 31, "amount": 0, "startDate": "2026-07-27", "endDate": "2026-08-02" }
+    ]
+  },
+  "timestamp": "2026-07-20T08:15:30.123Z",
+  "path": "/budgets/analysis/stats?month=2026-07"
+}`,
+  },
 ];
 
 const ERRORS = [
@@ -495,7 +556,7 @@ export default function DeveloperPage() {
           <h1 className="text-3xl font-bold tracking-tight">Developer API</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Programmatically manage your expenses from external tools like n8n, Telegram bots, or your
-            own scripts. Authenticate with your personal API key and call the endpoints below.
+            own scripts. Expense endpoints use your personal API key; analysis uses your signed-in access token.
           </p>
         </header>
 
@@ -608,9 +669,10 @@ export default function DeveloperPage() {
         {/* Authentication */}
         <Section id="authentication" title="Authentication">
           <p className="text-sm text-muted-foreground">
-            All requests are authenticated with your API key, passed in the{" "}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">x-api-key</code> header.
-            Requests without a valid key return <span className="font-mono text-xs">401 Unauthorized</span>.
+            Expense API requests use your API key in the{" "}
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">x-api-key</code> header. The analysis
+            endpoint uses a <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Bearer</code> access token.
+            Requests without valid credentials return <span className="font-mono text-xs">401 Unauthorized</span>.
           </p>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Base URL</p>
@@ -619,7 +681,16 @@ export default function DeveloperPage() {
               <CopyButton text={DISPLAY_URL} />
             </div>
           </div>
-          <CodeBlock language="http" code={`x-api-key: YOUR_API_KEY`} />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expense endpoints</p>
+              <CodeBlock language="http" code={`x-api-key: YOUR_API_KEY`} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Analysis endpoint</p>
+              <CodeBlock language="http" code={`Authorization: Bearer YOUR_ACCESS_TOKEN`} />
+            </div>
+          </div>
         </Section>
 
         {/* Expense object */}
