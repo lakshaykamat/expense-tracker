@@ -286,18 +286,18 @@ const result = await res.json();`,
   {
     id: "get-analysis-stats",
     method: "GET",
-    path: "/budgets/analysis/stats",
+    path: "/api/v1/budgets/analysis/stats",
     title: "Get analysis statistics",
     description:
-      "Returns spending and budget analysis for the selected month, including daily averages, top categories, top expenses, and weekly totals. Requires a Bearer access token. A budget is optional; statistics are still returned when none exists.",
+      "Returns spending and budget analysis for the selected month, including daily averages, top categories, top expenses, and weekly totals. A budget is optional; statistics are still returned when none exists.",
     queryParams: [
       { name: "month", type: "string", required: true, description: "Month to analyze in YYYY-MM format (e.g. 2026-07)." },
     ],
-    curl: `curl "${DISPLAY_URL}/budgets/analysis/stats?month=2026-07" \\
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"`,
+    curl: `curl "${DISPLAY_URL}/api/v1/budgets/analysis/stats?month=2026-07" \\
+  -H "x-api-key: YOUR_API_KEY"`,
     js: `const res = await fetch(
-  "${DISPLAY_URL}/budgets/analysis/stats?month=2026-07",
-  { headers: { Authorization: "Bearer YOUR_ACCESS_TOKEN" } }
+  "${DISPLAY_URL}/api/v1/budgets/analysis/stats?month=2026-07",
+  { headers: { "x-api-key": "YOUR_API_KEY" } }
 );
 const { data: analysis } = await res.json();`,
     responseStatus: "200 OK",
@@ -341,14 +341,14 @@ const { data: analysis } = await res.json();`,
     ]
   },
   "timestamp": "2026-07-20T08:15:30.123Z",
-  "path": "/budgets/analysis/stats?month=2026-07"
+  "path": "/api/v1/budgets/analysis/stats?month=2026-07"
 }`,
   },
 ];
 
 const ERRORS = [
   { status: "400", title: "Bad Request", description: "A parameter failed validation (e.g. amount below 0.01 or a malformed date)." },
-  { status: "401", title: "Unauthorized", description: "The x-api-key header is missing or the key is invalid." },
+  { status: "401", title: "Unauthorized", description: "The x-api-key header is missing or the API key is invalid." },
   { status: "404", title: "Not Found", description: "The requested expense does not exist or does not belong to you." },
 ];
 
@@ -556,7 +556,7 @@ export default function DeveloperPage() {
           <h1 className="text-3xl font-bold tracking-tight">Developer API</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Programmatically manage your expenses from external tools like n8n, Telegram bots, or your
-            own scripts. Expense endpoints use your personal API key; analysis uses your signed-in access token.
+            own scripts. Expense and analysis endpoints use your personal API key.
           </p>
         </header>
 
@@ -669,9 +669,8 @@ export default function DeveloperPage() {
         {/* Authentication */}
         <Section id="authentication" title="Authentication">
           <p className="text-sm text-muted-foreground">
-            Expense API requests use your API key in the{" "}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">x-api-key</code> header. The analysis
-            endpoint uses a <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Bearer</code> access token.
+            All expense and analysis API requests use your API key in the{" "}
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">x-api-key</code> header.
             Requests without valid credentials return <span className="font-mono text-xs">401 Unauthorized</span>.
           </p>
           <div className="space-y-2">
@@ -681,14 +680,10 @@ export default function DeveloperPage() {
               <CopyButton text={DISPLAY_URL} />
             </div>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expense endpoints</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">All endpoints</p>
               <CodeBlock language="http" code={`x-api-key: YOUR_API_KEY`} />
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Analysis endpoint</p>
-              <CodeBlock language="http" code={`Authorization: Bearer YOUR_ACCESS_TOKEN`} />
             </div>
           </div>
         </Section>

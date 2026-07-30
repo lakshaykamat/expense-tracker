@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BudgetsService } from './application/budgets.service';
 import { BudgetsController } from './presentation/controllers/budgets.controller';
+import { AnalysisPublicController } from './presentation/controllers/analysis-public.controller';
 import { Budget, BudgetSchema } from './domain/schemas/budget.schema';
 import { AuthModule } from '../auth/auth.module';
 import { ExpensesModule } from '../modules/expenses/expenses.module';
@@ -12,7 +13,7 @@ import { ExpensesModule } from '../modules/expenses/expenses.module';
     AuthModule,
     ExpensesModule,
   ],
-  controllers: [BudgetsController],
+  controllers: [BudgetsController, AnalysisPublicController],
   providers: [BudgetsService],
   exports: [BudgetsService],
 })
